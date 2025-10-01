@@ -17,6 +17,7 @@ import DownloadsScreen from "./src/screens/DownloadsScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import SORScreen from "./src/screens/SORScreen";
 import WELScreen from "./src/screens/WELScreen";
+import WeeklyCalendarScreen from "./src/screens/WeeklyCalendarScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -32,6 +33,11 @@ function MoreStackNavigator() {
         name="MoreHome"
         component={MoreTabsScreen}
         options={{ title: "More" }}
+      />
+      <Stack.Screen
+        name="WeeklyCalendar"
+        component={WeeklyCalendarScreen}
+        options={{ title: "Weekly Calendar" }}
       />
       <Stack.Screen
         name="Fees"
@@ -64,6 +70,11 @@ function MoreStackNavigator() {
 
 function MoreTabsScreen({ navigation }: any) {
   const menuItems = [
+    {
+      title: "Weekly Calendar",
+      screen: "WeeklyCalendar",
+      icon: "calendar-outline",
+    },
     { title: "Fees", screen: "Fees", icon: "cash-outline" },
     { title: "Downloads", screen: "Downloads", icon: "download-outline" },
     { title: "Profile", screen: "Profile", icon: "person-outline" },

@@ -20,6 +20,7 @@ export interface Student {
     email: string;
     relationship: string;
   };
+  intakeGroupTitle?: string;
 }
 
 export interface Assignment {
@@ -72,6 +73,12 @@ export interface SORRecord {
   evidence?: string[];
 }
 
+export interface SORResult {
+  subject: string;
+  result: string;
+  status: string;
+}
+
 export interface WELLocation {
   id: string;
   name: string;
@@ -94,9 +101,19 @@ export interface WELPlacement {
   logbook?: string[];
 }
 
+export interface WELRecord {
+  id: string;
+  startDate: string;
+  endDate: string;
+  totalHours: number;
+  establishmentName: string;
+  establishmentContact: string;
+  evaluated: boolean;
+}
+
 export interface DashboardData {
   student: Student;
-  upcomingAssignments: Assignment[];
+  upcomingEvents: Event[];
   recentAttendance: AttendanceRecord[];
   pendingFees: Fee[];
   announcements: Announcement[];
@@ -109,4 +126,18 @@ export interface Announcement {
   date: string;
   priority: "low" | "medium" | "high";
   read: boolean;
+}
+
+export interface Event {
+  id: string;
+  title: string;
+  startDate: string;
+  startTime?: string;
+  endTime?: string;
+  details?: string;
+  lecturer?: string;
+  venue?: string;
+  campus?: string;
+  color: "lecture" | "practical" | "assessment" | "meeting";
+  assignedToModel: string[];
 }

@@ -16,10 +16,13 @@ import {
   ActivityIndicator,
 } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
 import StudentAPI from "../services/api";
 import { DashboardData } from "../types";
 
 export default function DashboardScreen() {
+  const navigation = useNavigation<StackNavigationProp<any>>();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
     null
   );
@@ -42,20 +45,32 @@ export default function DashboardScreen() {
           year: 2,
           profileImage: undefined,
         },
-        upcomingAssignments: [
+        upcomingEvents: [
           {
             id: "1",
-            title: "Basic Knife Skills Assessment",
-            description: "Demonstrate proper knife handling techniques",
-            dueDate: "2025-10-15T23:59:59Z",
-            status: "pending",
+            title: "Basic Knife Skills Lecture",
+            startDate: "2025-10-02",
+            startTime: "09:00",
+            endTime: "10:30",
+            details: "Introduction to knife handling techniques",
+            lecturer: "Chef Johnson",
+            venue: "Kitchen Lab A",
+            campus: "Main Campus",
+            color: "lecture",
+            assignedToModel: ["2025 Intake"],
           },
           {
             id: "2",
-            title: "Food Safety Quiz",
-            description: "Complete the HACCP food safety quiz",
-            dueDate: "2025-10-20T23:59:59Z",
-            status: "pending",
+            title: "Food Safety Practical",
+            startDate: "2025-10-03",
+            startTime: "14:00",
+            endTime: "16:00",
+            details: "HACCP principles hands-on",
+            lecturer: "Chef Smith",
+            venue: "Kitchen Lab B",
+            campus: "Main Campus",
+            color: "practical",
+            assignedToModel: ["2025 Intake"],
           },
         ],
         recentAttendance: [
@@ -158,11 +173,11 @@ export default function DashboardScreen() {
       {/* Quick Stats */}
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <Ionicons name="document-text" size={24} color="#2196F3" />
+          <Ionicons name="calendar" size={24} color="#2196F3" />
           <Text style={styles.statNumber}>
-            {dashboardData.upcomingAssignments.length}
+            {dashboardData.upcomingEvents.length}
           </Text>
-          <Text style={styles.statLabel}>Upcoming Assignments</Text>
+          <Text style={styles.statLabel}>Upcoming Events</Text>
         </View>
         <View style={styles.statCard}>
           <Ionicons name="cash" size={24} color="#ff6b6b" />
@@ -173,30 +188,37 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* Upcoming Assignments */}
+      {/* Upcoming Events */}
       <Card style={styles.card}>
         <Card.Content>
-          <Title>Upcoming Assignments</Title>
-          {dashboardData.upcomingAssignments.length > 0 ? (
-            dashboardData.upcomingAssignments.slice(0, 3).map((assignment) => (
-              <TouchableOpacity
-                key={assignment.id}
-                style={styles.assignmentItem}
-              >
+          <Title>Upcoming Events</Title>
+          {dashboardData.upcomingEvents.length > 0 ? (
+            dashboardData.upcomingEvents.slice(0, 3).map((event) => (
+              <TouchableOpacity key={event.id} style={styles.assignmentItem}>
                 <View style={styles.assignmentContent}>
-                  <Text style={styles.assignmentTitle}>{assignment.title}</Text>
+                  <Text style={styles.assignmentTitle}>{event.title}</Text>
                   <Text style={styles.assignmentDue}>
-                    Due: {new Date(assignment.dueDate).toLocaleDateString()}
+                    {new Date(event.startDate).toLocaleDateString()} at{" "}
+                    {event.startTime}
+                  </Text>
+                  <Text style={styles.eventDetails}>
+                    {event.lecturer} • {event.venue}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#666" />
               </TouchableOpacity>
             ))
           ) : (
-            <Paragraph>No upcoming assignments</Paragraph>
+            <Paragraph>No upcoming events</Paragraph>
           )}
-          <Button mode="text" style={styles.viewAllButton}>
-            View All Assignments
+          <Button
+            mode="text"
+            style={styles.viewAllButton}
+            onPress={() =>
+              navigation.navigate("More" as any, { screen: "WeeklyCalendar" })
+            }
+          >
+            View All Events
           </Button>
         </Card.Content>
       </Card>
@@ -369,6 +391,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginTop: 4,
+  },
+  eventDetails: {
+    fontSize: 12,
+    color: "#999",
+    marginTop: 2,
   },
   attendanceItem: {
     paddingVertical: 8,
