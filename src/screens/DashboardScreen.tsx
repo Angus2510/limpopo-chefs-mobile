@@ -19,73 +19,250 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import StudentAPI from "../services/api";
-import { DashboardData } from "../types";
+import AppLogo from "../components/AppLogo";
+import { DashboardData, Student } from "../types";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function DashboardScreen() {
   const navigation = useNavigation<StackNavigationProp<any>>();
+  const { user, studentProfile, isAuthenticated, refreshStudentProfile } =
+    useAuth();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
     null
   );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // This should come from authentication context
-  const studentId = "current-student-id"; // Replace with actual student ID
-
   const loadDashboardData = async () => {
+    if (!isAuthenticated || !user?.id) {
+      console.log("❌ Dashboard: No authenticated user");
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Mock data for demonstration
-      const mockData: DashboardData = {
-        student: {
-          id: "current-student-id",
-          name: "John Doe",
-          email: "john.doe@example.com",
-          studentNumber: "LCA2024001",
+      console.log("🔍 Dashboard: Loading data for user:", user.id);
+
+      // Load actual student profile
+      let profile = null;
+      try {
+        const apiResponse = await StudentAPI.getStudentProfile(user.id);
+        console.log(
+          "✅ Dashboard: Profile loaded from API:",
+          JSON.stringify(apiResponse, null, 2)
+        );
+
+        if ((apiResponse as any)?.success && (apiResponse as any)?.data) {
+          const studentData = (apiResponse as any).data.student;
+          profile = {
+            id: studentData.id || user.id,
+            name: `${
+              studentData.profile?.firstName || user?.firstName || "Student"
+            } ${studentData.profile?.lastName || user?.lastName || ""}`.trim(),
+            email: studentData.email || user?.email || "",
+            studentNumber:
+              studentData.admissionNumber || studentData.username || user.id,
+            course: studentData.qualificationTitle || "Not enrolled",
+            year: 1,
+            profileImage: studentData.avatarUrl || undefined,
+            campus: studentData.campusTitle || "",
+            intakeGroup: studentData.intakeGroupTitle || "",
+            intakeGroupId:
+              studentData.intakeGroup || studentData.intakeGroupId || [],
+          };
+        }
+      } catch (error) {
+        console.log("⚠️ Dashboard: Profile API failed, using basic user data");
+        profile = {
+          id: user.id,
+          name:
+            `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+            "Student",
+          email: user.email || "",
+          studentNumber: user.id,
           course: "Culinary Arts",
-          year: 2,
+          year: 1,
           profileImage: undefined,
-        },
-        upcomingEvents: [
+        };
+      }
+
+      // Student profile now comes from centralized AuthContext
+
+      // Load real events from API
+      let upcomingEvents = [];
+      try {
+        console.log("📅 Dashboard: Loading events for user:", user.id);
+        const eventsResponse = await StudentAPI.getEvents(user.id);
+        console.log(
+          "✅ Dashboard: Events response from API:",
+          JSON.stringify(eventsResponse, null, 2)
+        );
+
+        // Extract events array from response - handle different response structures
+        let eventsData = [];
+        if (Array.isArray(eventsResponse)) {
+          eventsData = eventsResponse;
+        } else if (eventsResponse && typeof eventsResponse === "object") {
+          const response = eventsResponse as any;
+          if (response.events && Array.isArray(response.events)) {
+            eventsData = response.events;
+          } else if (response.data && Array.isArray(response.data)) {
+            eventsData = response.data;
+          } else {
+            // Try to find an array property in the response
+            const possibleArrays = Object.values(response).filter(
+              Array.isArray
+            );
+            if (possibleArrays.length > 0) {
+              eventsData = possibleArrays[0] as any[];
+            }
+          }
+        }
+
+        console.log(
+          `✅ Dashboard: Extracted ${eventsData.length} events from response`
+        );
+
+        // Filter for today's events only
+        const today = new Date();
+        const todayStr = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+
+        let todaysEvents = eventsData.filter((event: any) => {
+          const eventDate = new Date(event.startDate || event.date);
+          const eventDateStr = eventDate.toISOString().split("T")[0];
+          return eventDateStr === todayStr;
+        });
+
+        console.log(
+          `📅 Dashboard: Found ${todaysEvents.length} events for today`
+        );
+        console.log(`📅 Dashboard: Profile data:`, profile);
+
+        // Filter by user's intake group if available
+        if (
+          profile?.intakeGroupId &&
+          Array.isArray(profile.intakeGroupId) &&
+          profile.intakeGroupId.length > 0
+        ) {
+          console.log(
+            `📅 Dashboard: Filtering by intake group IDs:`,
+            profile.intakeGroupId
+          );
+          todaysEvents = todaysEvents.filter((event: any) => {
+            if (!event.assignedToModel || event.assignedToModel.length === 0) {
+              return true; // Show events with no specific assignment
+            }
+
+            // Check if any of the user's intake group IDs match any of the event's assigned groups
+            const hasMatch = profile.intakeGroupId.some((userGroupId: string) =>
+              event.assignedToModel.includes(userGroupId)
+            );
+
+            return hasMatch;
+          });
+          console.log(
+            `📅 Dashboard: After intake filter: ${todaysEvents.length} events`
+          );
+        } else if (
+          profile?.intakeGroupId &&
+          typeof profile.intakeGroupId === "string"
+        ) {
+          // Handle legacy string format
+          console.log(
+            `📅 Dashboard: Filtering by intake group ID (string): ${profile.intakeGroupId}`
+          );
+          todaysEvents = todaysEvents.filter((event: any) => {
+            if (!event.assignedToModel || event.assignedToModel.length === 0) {
+              return true; // Show events with no specific assignment
+            }
+            return event.assignedToModel.includes(profile.intakeGroupId);
+          });
+          console.log(
+            `📅 Dashboard: After intake filter: ${todaysEvents.length} events`
+          );
+        }
+
+        // Filter by campus if available
+        if (profile?.campus) {
+          console.log(`📅 Dashboard: Filtering by campus: ${profile.campus}`);
+          todaysEvents = todaysEvents.filter((event: any) => {
+            if (!event.campus || event.campus === "") {
+              return true; // Show events with no campus specified
+            }
+
+            // Handle variations: "Mokopane" vs "polokwane" etc.
+            const userCampus = profile.campus
+              .toLowerCase()
+              .replace(/[^a-z]/g, "");
+            const eventCampus = event.campus
+              .toLowerCase()
+              .replace(/[^a-z]/g, "");
+
+            return (
+              userCampus === eventCampus ||
+              userCampus.includes(eventCampus) ||
+              eventCampus.includes(userCampus)
+            );
+          });
+          console.log(
+            `📅 Dashboard: After campus filter: ${todaysEvents.length} events`
+          );
+        }
+
+        upcomingEvents = todaysEvents.slice(0, 5); // Take up to 5 events for today
+
+        console.log("📅 Dashboard: Filtered upcoming events:", upcomingEvents);
+      } catch (error) {
+        console.log("⚠️ Dashboard: Events API failed, using mock data");
+        // Fallback to mock events with real profile data
+        const todayStr = new Date().toISOString().split("T")[0];
+        upcomingEvents = [
           {
             id: "1",
             title: "Basic Knife Skills Lecture",
-            startDate: "2025-10-02",
+            startDate: todayStr,
             startTime: "09:00",
             endTime: "10:30",
             details: "Introduction to knife handling techniques",
             lecturer: "Chef Johnson",
             venue: "Kitchen Lab A",
-            campus: "Main Campus",
+            campus: profile?.campus || "Main Campus",
             color: "lecture",
-            assignedToModel: ["2025 Intake"],
+            assignedToModel: [profile?.intakeGroup || "2025 Intake"],
           },
           {
             id: "2",
             title: "Food Safety Practical",
-            startDate: "2025-10-03",
+            startDate: todayStr,
             startTime: "14:00",
             endTime: "16:00",
             details: "HACCP principles hands-on",
             lecturer: "Chef Smith",
             venue: "Kitchen Lab B",
-            campus: "Main Campus",
+            campus: profile?.campus || "Main Campus",
             color: "practical",
-            assignedToModel: ["2025 Intake"],
+            assignedToModel: [profile?.intakeGroup || "2025 Intake"],
           },
-        ],
+        ];
+      }
+
+      // Create dashboard data with real profile and events
+      const dashboardData: DashboardData = {
+        student: profile as Student,
+        upcomingEvents: upcomingEvents,
         recentAttendance: [
           {
             id: "1",
-            studentId: "current-student-id",
-            date: "2025-09-25",
+            studentId: user.id,
+            date: "2025-10-06",
             status: "present",
             timeIn: "08:00",
             location: "Main Kitchen",
           },
           {
             id: "2",
-            studentId: "current-student-id",
-            date: "2025-09-24",
+            studentId: user.id,
+            date: "2025-10-05",
             status: "present",
             timeIn: "08:15",
             location: "Main Kitchen",
@@ -106,13 +283,13 @@ export default function DashboardScreen() {
             title: "Kitchen Renovation Update",
             content:
               "The main kitchen will be closed for renovations from Oct 15-17",
-            date: "2025-09-28",
+            date: "2025-10-06",
             priority: "high",
             read: false,
           },
         ],
       };
-      setDashboardData(mockData);
+      setDashboardData(dashboardData);
     } catch (error) {
       Alert.alert("Error", "Failed to load dashboard data");
       console.error("Dashboard load error:", error);
@@ -123,7 +300,7 @@ export default function DashboardScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadDashboardData();
+    await Promise.all([refreshStudentProfile(), loadDashboardData()]);
     setRefreshing(false);
   };
 
@@ -159,14 +336,23 @@ export default function DashboardScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
+      {/* App Logo */}
+      <View style={styles.logoContainer}>
+        <AppLogo size="medium" showText={true} />
+      </View>
+
       {/* Welcome Card */}
       <Card style={styles.welcomeCard}>
         <Card.Content>
           <Title>Welcome back, {dashboardData.student.name}!</Title>
-          <Paragraph>
-            Student ID: {dashboardData.student.studentNumber}
-          </Paragraph>
-          <Paragraph>Course: {dashboardData.student.course}</Paragraph>
+          <Paragraph>Username: {dashboardData.student.studentNumber}</Paragraph>
+          <Paragraph>Qualification: {dashboardData.student.course}</Paragraph>
+          {studentProfile?.campus && (
+            <Paragraph>Campus: {studentProfile.campus}</Paragraph>
+          )}
+          {studentProfile?.intakeGroup && (
+            <Paragraph>Intake: {studentProfile.intakeGroup}</Paragraph>
+          )}
         </Card.Content>
       </Card>
 
@@ -177,7 +363,7 @@ export default function DashboardScreen() {
           <Text style={styles.statNumber}>
             {dashboardData.upcomingEvents.length}
           </Text>
-          <Text style={styles.statLabel}>Upcoming Events</Text>
+          <Text style={styles.statLabel}>Daily Roster</Text>
         </View>
         <View style={styles.statCard}>
           <Ionicons name="cash" size={24} color="#ff6b6b" />
@@ -188,10 +374,10 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* Upcoming Events */}
+      {/* Daily Roster */}
       <Card style={styles.card}>
         <Card.Content>
-          <Title>Upcoming Events</Title>
+          <Title>Daily Roster</Title>
           {dashboardData.upcomingEvents.length > 0 ? (
             dashboardData.upcomingEvents.slice(0, 3).map((event) => (
               <TouchableOpacity key={event.id} style={styles.assignmentItem}>
@@ -218,7 +404,7 @@ export default function DashboardScreen() {
               navigation.navigate("More" as any, { screen: "WeeklyCalendar" })
             }
           >
-            View All Events
+            View Weekly Schedule
           </Button>
         </Card.Content>
       </Card>
@@ -458,5 +644,19 @@ const styles = StyleSheet.create({
   },
   viewAllButton: {
     marginTop: 8,
+  },
+  logoContainer: {
+    alignItems: "center",
+    paddingVertical: 20,
+    backgroundColor: "#fff",
+    marginBottom: 10,
+    borderRadius: 8,
+    marginHorizontal: 16,
+    marginTop: 10,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
 });

@@ -55,7 +55,7 @@ function MoreHomeScreen({ navigation }: any) {
           }}
         >
           <Text style={{ fontSize: 18, fontWeight: "bold", color: "#1565c0" }}>
-            📅 Weekly Calendar
+            📅 Weekly Schedule
           </Text>
         </TouchableOpacity>
 
@@ -184,7 +184,7 @@ function MoreStackNavigator() {
       <MoreStack.Screen
         name="WeeklyCalendar"
         component={WeeklyCalendarScreen}
-        options={{ title: "Weekly Calendar" }}
+        options={{ title: "Weekly Schedule" }}
       />
       <MoreStack.Screen
         name="Fees"
@@ -287,7 +287,7 @@ function MainStackNavigator() {
       <Stack.Screen
         name="WeeklyCalendar"
         component={WeeklyCalendarScreen}
-        options={{ title: "Weekly Calendar" }}
+        options={{ title: "Weekly Schedule" }}
       />
 
       <Stack.Screen

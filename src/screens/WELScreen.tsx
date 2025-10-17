@@ -1,53 +1,123 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  Alert,
+} from "react-native";
 import {
   Card,
   Title,
   Paragraph,
   Button,
   ProgressBar,
+  ActivityIndicator,
 } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { Student, WELRecord } from "../types";
+import { Student, WELPlacement, WELRecord } from "../types";
+import { useAuth } from "../contexts/AuthContext";
+import StudentAPI from "../services/api";
+
+interface WELHoursData {
+  totalHours: number;
+  evaluatedHours: number;
+  pendingHours: number;
+  maxHours: number;
+  placements: any[];
+}
 
 export default function WELScreen() {
   const navigation = useNavigation();
+  const { user, isAuthenticated } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [welData, setWelData] = useState<WELHoursData | null>(null);
+  const [studentProfile, setStudentProfile] = useState<any>(null);
 
-  // Mock student data
-  const student: Student = {
-    id: "current-student-id",
-    name: "John Doe",
-    email: "john.doe@example.com",
-    studentNumber: "LCA2024001",
-    course: "Culinary Arts",
-    year: 2,
-    intakeGroupTitle: "Certificate Cook",
+  const loadWELData = async () => {
+    if (!isAuthenticated || !user?.id) {
+      console.log("❌ WEL: No authenticated user");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      console.log("🔍 WEL: Loading data for user:", user.id);
+
+      // Load student profile for intake group info
+      let profile = null;
+      try {
+        const apiResponse = await StudentAPI.getStudentProfile(user.id);
+        if ((apiResponse as any)?.success && (apiResponse as any)?.data) {
+          const studentData = (apiResponse as any).data.student;
+          profile = {
+            intakeGroup: studentData.intakeGroupTitle || "",
+            course: studentData.qualificationTitle || "Not enrolled",
+          };
+        }
+      } catch (error) {
+        console.log("⚠️ WEL: Profile API failed");
+      }
+
+      setStudentProfile(profile);
+
+      // Load WEL hours data (contains both hours summary and placements)
+      const hoursResponse = await StudentAPI.getWELHours(user.id);
+
+      console.log(
+        "✅ WEL: Hours data:",
+        JSON.stringify(hoursResponse, null, 2)
+      );
+
+      // Determine max hours based on intake group
+      const maxHours = getWelMaxHoursForIntake(profile?.intakeGroup);
+
+      // Extract data from API response
+      const hoursData = (hoursResponse as any)?.success
+        ? (hoursResponse as any).data
+        : hoursResponse;
+
+      // Use hours API data for both summary and placements (since they're the same)
+      const placements = hoursData?.placements || [];
+
+      // Calculate hours from the API response
+      let totalHours = 0;
+      let evaluatedHours = 0;
+      let pendingHours = 0;
+
+      if (hoursData) {
+        totalHours = hoursData.totalHours || 0;
+        evaluatedHours = hoursData.evaluatedHours || 0;
+        pendingHours = hoursData.pendingHours || 0;
+      }
+
+      setWelData({
+        totalHours,
+        evaluatedHours,
+        pendingHours,
+        maxHours,
+        placements: placements || [],
+      });
+    } catch (error) {
+      console.error("❌ WEL: Error loading data:", error);
+      Alert.alert("Error", "Failed to load WEL data");
+
+      // Fallback to basic data structure
+      const maxHours = getWelMaxHoursForIntake(studentProfile?.intakeGroup);
+      setWelData({
+        totalHours: 0,
+        evaluatedHours: 0,
+        pendingHours: 0,
+        maxHours,
+        placements: [],
+      });
+    } finally {
+      setLoading(false);
+    }
   };
-
-  // Mock WEL records
-  const wellnessRecords: WELRecord[] = [
-    {
-      id: "1",
-      startDate: "2025-01-01",
-      endDate: "2025-03-01",
-      totalHours: 200,
-      establishmentName: "Fine Dining Restaurant",
-      establishmentContact: "Chef Manager",
-      evaluated: true,
-    },
-    {
-      id: "2",
-      startDate: "2025-04-01",
-      endDate: "2025-06-01",
-      totalHours: 150,
-      establishmentName: "Hotel Kitchen",
-      establishmentContact: "Head Chef",
-      evaluated: false,
-    },
-  ];
-
-  const [totalHours, setTotalHours] = useState(0);
 
   // Determine maxHours based on intake group
   const getWelMaxHoursForIntake = (intakeString?: string): number => {
@@ -63,38 +133,52 @@ export default function WELScreen() {
     return 0;
   };
 
-  const maxHours = getWelMaxHoursForIntake(student.intakeGroupTitle);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadWELData();
+    setRefreshing(false);
+  };
 
   useEffect(() => {
-    if (wellnessRecords && wellnessRecords.length > 0) {
-      const total = wellnessRecords.reduce(
-        (sum, record) => sum + record.totalHours,
-        0
-      );
-      setTotalHours(total);
-    } else {
-      setTotalHours(0);
-    }
-  }, [wellnessRecords]);
+    loadWELData();
+  }, [isAuthenticated, user?.id]);
 
-  const progressPercentage = maxHours > 0 ? totalHours / maxHours : 0;
-  const remainingHours = Math.max(0, maxHours - totalHours);
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+        <Text style={styles.loadingText}>Loading WEL data...</Text>
+      </View>
+    );
+  }
 
-  const evaluatedHours = wellnessRecords
-    .filter((record) => record.evaluated)
-    .reduce((sum, record) => sum + record.totalHours, 0);
+  if (!welData) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={48} color="#ff6b6b" />
+        <Text style={styles.errorText}>Failed to load WEL data</Text>
+        <Button mode="contained" onPress={loadWELData}>
+          Retry
+        </Button>
+      </View>
+    );
+  }
 
-  const pendingHours = wellnessRecords
-    .filter((record) => !record.evaluated)
-    .reduce((sum, record) => sum + record.totalHours, 0);
+  const progressPercentage =
+    welData.maxHours > 0 ? welData.totalHours / welData.maxHours : 0;
+  const remainingHours = Math.max(0, welData.maxHours - welData.totalHours);
 
   const handleViewSOR = () => {
-    // Navigate to SOR screen
     navigation.navigate("SOR" as never);
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.header}>
@@ -110,7 +194,7 @@ export default function WELScreen() {
             />
             <View style={styles.progressText}>
               <Text style={styles.progressLabel}>
-                {totalHours} hours completed
+                {welData.totalHours} hours completed
               </Text>
               <Text style={styles.progressLabel}>
                 {remainingHours} remaining
@@ -125,21 +209,23 @@ export default function WELScreen() {
                 {Math.round(progressPercentage * 100)}%
               </Text>
             </View>
-            <Text style={styles.targetText}>Target: {maxHours} hours</Text>
+            <Text style={styles.targetText}>
+              Target: {welData.maxHours} hours
+            </Text>
           </View>
 
           <View style={styles.hoursContainer}>
             <View style={styles.hourItem}>
               <Text style={styles.hourLabel}>Evaluated Hours:</Text>
               <Text style={[styles.hourValue, styles.evaluated]}>
-                {evaluatedHours}
+                {welData.evaluatedHours}
               </Text>
             </View>
-            {pendingHours > 0 && (
+            {welData.pendingHours > 0 && (
               <View style={styles.hourItem}>
                 <Text style={styles.hourLabel}>Pending Evaluation:</Text>
                 <Text style={[styles.hourValue, styles.pending]}>
-                  {pendingHours}
+                  {welData.pendingHours}
                 </Text>
               </View>
             )}
@@ -156,22 +242,36 @@ export default function WELScreen() {
         </Card.Content>
       </Card>
 
-      {/* WEL Records List */}
+      {/* WEL Placements List */}
       <Card style={styles.card}>
         <Card.Content>
           <Title>WEL Placements</Title>
-          {wellnessRecords.map((record) => (
-            <View key={record.id} style={styles.recordItem}>
-              <Text style={styles.recordTitle}>{record.establishmentName}</Text>
-              <Text style={styles.recordDetails}>
-                {record.startDate} - {record.endDate}
-              </Text>
-              <Text style={styles.recordDetails}>
-                Hours: {record.totalHours} | Evaluated:{" "}
-                {record.evaluated ? "Yes" : "No"}
-              </Text>
-            </View>
-          ))}
+          {welData?.placements && welData.placements.length > 0 ? (
+            welData.placements.map((placement: any) => (
+              <View key={placement.id} style={styles.recordItem}>
+                <Text style={styles.recordTitle}>
+                  {placement.establishmentName || "Unknown Establishment"}
+                </Text>
+                <Text style={styles.recordDetails}>
+                  {new Date(placement.startDate).toLocaleDateString()} -{" "}
+                  {new Date(placement.endDate).toLocaleDateString()}
+                </Text>
+                <Text style={styles.recordDetails}>
+                  Hours: {placement.totalHours || 0}
+                </Text>
+                <Text style={styles.recordDetails}>
+                  Status: {placement.evaluated ? "Completed" : "Pending"}
+                </Text>
+                {placement.establishmentContact && (
+                  <Text style={styles.recordDetails}>
+                    Contact: {placement.establishmentContact}
+                  </Text>
+                )}
+              </View>
+            ))
+          ) : (
+            <Paragraph>No WEL placements found</Paragraph>
+          )}
         </Card.Content>
       </Card>
     </ScrollView>
@@ -183,6 +283,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
     padding: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#666",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    color: "#666",
+    marginVertical: 16,
+    textAlign: "center",
   },
   card: {
     marginBottom: 16,
@@ -259,6 +381,10 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 16,
+  },
+  buttonContainer: {
+    marginTop: 8,
+    marginBottom: 16,
   },
   recordItem: {
     marginBottom: 12,

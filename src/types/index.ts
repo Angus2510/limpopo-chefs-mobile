@@ -77,6 +77,141 @@ export interface SORResult {
   subject: string;
   result: string;
   status: string;
+  unitTitle?: string;
+  id?: string;
+  dateCreated?: string;
+  competency?: boolean | string;
+  rawData?: any;
+}
+
+export interface ProcessedResult {
+  // Subject information with full names
+  subjectId: string | null;
+  subjectTitle: string;
+  subjectType: string;
+  subjectYear: number;
+
+  // Result information
+  hasResult: boolean;
+  resultId: string | null;
+  dateTaken: string | null;
+  dateAssessed: string | null;
+
+  // Score fields
+  percent: number | null;
+  rawPercent: number | null;
+  scores: any;
+  mark: number | null;
+  average: number | null;
+  testScore: number | null;
+  taskScore: number | null;
+
+  // Competency information
+  competencyStatus: string;
+  competency: "competent" | "not_competent";
+
+  // Additional metadata
+  status: string | null;
+  assignment: any;
+  outcome: any;
+  fullResult: any;
+}
+
+export interface CompetencyRecord {
+  id: string;
+  outcome?: string;
+  competency?: "competent" | "not_competent" | boolean;
+  dateAssessed?: Date | string;
+  dateTaken?: Date | string;
+  percent?: number;
+  scores?: number;
+  mark?: number;
+  average?: number;
+  testScore?: number;
+  taskScore?: number;
+  assignments?: {
+    title?: string;
+    [key: string]: any;
+  };
+  title?: string;
+  unitTitle?: string;
+  status?: string;
+  [key: string]: any;
+}
+
+export interface StudentProfile {
+  student?: {
+    id: string;
+    admissionNumber: string;
+    studentNumber: string;
+    email: string;
+    active: boolean;
+    campus: string;
+    campusName: string;
+    campusId: string;
+    intakeGroup: string;
+    intakeGroupTitle: string;
+    firstName: string;
+    lastName: string;
+    fullName: string;
+    intakeCategory: string;
+    profile: {
+      firstName: string;
+      lastName: string;
+      middleName?: string;
+      idNumber: string;
+      dateOfBirth: string;
+      gender: string;
+      mobileNumber: string;
+      homeLanguage: string;
+      cityAndGuildNumber?: string;
+      admissionDate: string;
+      address?: any;
+      postalAddress?: any;
+    };
+    importantInformation: string;
+  };
+
+  // Processed results with subject names and competency calculations
+  results: ProcessedResult[];
+
+  // Summary information
+  summary: {
+    totalSubjects: number;
+    subjectsWithResults: number;
+    subjectsWithoutResults: number;
+    overallOutcome: string;
+    competentCount: number;
+    nycCount: number;
+    pendingCount: number;
+  };
+
+  // All subjects for reference
+  allSubjects: Array<{
+    id: string | null;
+    title: string;
+    type: string;
+    year: number;
+  }>;
+
+  // Original data for compatibility
+  guardians: any[];
+  attendance: any[];
+  documents: any;
+  finances: any;
+  events: any[];
+  learningMaterials: any[];
+  rawResults: any[];
+}
+
+export interface CompetenciesResponse {
+  success: boolean;
+  data?: StudentProfile;
+  error?: string;
+}
+
+export interface ResultsData {
+  results: SORResult[];
 }
 
 export interface WELLocation {

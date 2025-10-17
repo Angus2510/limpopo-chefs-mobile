@@ -2,8 +2,9 @@
 
 export const API_CONFIG = {
   // Change this to your actual API URL
-  BASE_URL: "http://localhost:3000/api", // For development
-  // BASE_URL: 'https://your-domain.com/api', // For production
+  BASE_URL: "http://192.168.101.148:3000/api/mobile", // For development - Next.js backend (using network IP)
+  // BASE_URL: "http://localhost:3000/api/mobile", // Alternative: localhost (only works on web)
+  // BASE_URL: 'https://your-domain.com/api/mobile', // For production
 
   TIMEOUT: 10000, // 10 seconds
 };

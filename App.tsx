@@ -5,8 +5,17 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { StatusBar } from "expo-status-bar";
 import { PaperProvider } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
 import { Card } from "react-native-paper";
+
+// Import contexts
+import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 
 // Import screens
 import DashboardScreen from "./src/screens/DashboardScreen";
@@ -18,6 +27,7 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import SORScreen from "./src/screens/SORScreen";
 import WELScreen from "./src/screens/WELScreen";
 import WeeklyCalendarScreen from "./src/screens/WeeklyCalendarScreen";
+import LoginScreen from "./src/screens/LoginScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -69,6 +79,8 @@ function MoreStackNavigator() {
 }
 
 function MoreTabsScreen({ navigation }: any) {
+  const { logout } = useAuth();
+
   const menuItems = [
     {
       title: "Weekly Calendar",
@@ -81,6 +93,14 @@ function MoreTabsScreen({ navigation }: any) {
     { title: "Student Records", screen: "SOR", icon: "document-text-outline" },
     { title: "Work Experience", screen: "WEL", icon: "business-outline" },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
     <View style={styles.moreContainer}>
@@ -97,6 +117,16 @@ function MoreTabsScreen({ navigation }: any) {
           </Card>
         </TouchableOpacity>
       ))}
+
+      {/* Logout Button */}
+      <TouchableOpacity onPress={handleLogout}>
+        <Card style={[styles.menuCard, styles.logoutCard]}>
+          <Card.Content style={styles.menuContent}>
+            <Ionicons name="log-out-outline" size={24} color="#f44336" />
+            <Text style={[styles.menuTitle, styles.logoutText]}>Logout</Text>
+          </Card.Content>
+        </Card>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -151,13 +181,34 @@ function MainTabs() {
   );
 }
 
+function AppContent() {
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2196F3" />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
+
+  return <MainTabs />;
+}
+
 export default function App() {
   return (
     <PaperProvider>
-      <NavigationContainer>
-        <MainTabs />
-        <StatusBar style="auto" />
-      </NavigationContainer>
+      <AuthProvider>
+        <NavigationContainer>
+          <AppContent />
+          <StatusBar style="auto" />
+        </NavigationContainer>
+      </AuthProvider>
     </PaperProvider>
   );
 }
@@ -172,6 +223,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     elevation: 4,
   },
+  logoutCard: {
+    marginTop: 20,
+    borderColor: "#f44336",
+    borderWidth: 1,
+  },
   menuContent: {
     flexDirection: "row",
     alignItems: "center",
@@ -181,5 +237,19 @@ const styles = StyleSheet.create({
     marginLeft: 16,
     fontSize: 16,
     color: "#333",
+  },
+  logoutText: {
+    color: "#f44336",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#666",
   },
 });

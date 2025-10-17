@@ -17,6 +17,8 @@ import {
   subWeeks,
   getWeek,
 } from "date-fns";
+import { useAuth } from "../contexts/AuthContext";
+import StudentAPI from "../services/api";
 
 interface Event {
   id: string;
@@ -41,96 +43,182 @@ const EVENT_TYPES: Record<string, string> = {
 };
 
 export default function WeeklyCalendarScreen() {
+  const { user, isAuthenticated } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [studentProfile, setStudentProfile] = useState<any>(null);
+
+  const fetchEvents = async () => {
+    if (!isAuthenticated || !user?.id) {
+      console.log("❌ WeeklyCalendar: No authenticated user");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      console.log("📅 WeeklyCalendar: Loading events for user:", user.id);
+
+      // Load student profile for filtering
+      let profile = null;
+      try {
+        const apiResponse = await StudentAPI.getStudentProfile(user.id);
+        if ((apiResponse as any)?.success && (apiResponse as any)?.data) {
+          const studentData = (apiResponse as any).data.student;
+          profile = {
+            intakeGroup: studentData.intakeGroupTitle || "",
+            intakeGroupId:
+              studentData.intakeGroup || studentData.intakeGroupId || [],
+            campus: studentData.campusTitle || "",
+          };
+        }
+      } catch (error) {
+        console.log("⚠️ WeeklyCalendar: Profile API failed");
+      }
+
+      setStudentProfile(profile);
+
+      // Load events from API
+      try {
+        const eventsResponse = await StudentAPI.getEvents(user.id);
+        console.log(
+          "✅ WeeklyCalendar: Events response from API:",
+          JSON.stringify(eventsResponse, null, 2)
+        );
+
+        // Extract events array from response - handle different response structures
+        let eventsData = [];
+        if (Array.isArray(eventsResponse)) {
+          eventsData = eventsResponse;
+        } else if (eventsResponse && typeof eventsResponse === "object") {
+          const response = eventsResponse as any;
+          if (response.events && Array.isArray(response.events)) {
+            eventsData = response.events;
+          } else if (response.data && Array.isArray(response.data)) {
+            eventsData = response.data;
+          } else {
+            // Try to find an array property in the response
+            const possibleArrays = Object.values(response).filter(
+              Array.isArray
+            );
+            if (possibleArrays.length > 0) {
+              eventsData = possibleArrays[0] as any[];
+            }
+          }
+        }
+
+        console.log(
+          `✅ WeeklyCalendar: Extracted ${eventsData.length} events from response`
+        );
+
+        // Filter events for current user's intake group and campus if available
+        let filteredEvents = Array.isArray(eventsData) ? eventsData : [];
+
+        console.log(
+          `📅 WeeklyCalendar: Starting with ${filteredEvents.length} events`
+        );
+        console.log(
+          "📅 WeeklyCalendar: User profile:",
+          JSON.stringify(profile, null, 2)
+        );
+
+        // Filter by user's intake group if available
+        if (
+          profile?.intakeGroupId &&
+          Array.isArray(profile.intakeGroupId) &&
+          profile.intakeGroupId.length > 0
+        ) {
+          console.log(
+            `📅 WeeklyCalendar: Filtering by intake group IDs:`,
+            profile.intakeGroupId
+          );
+
+          filteredEvents = filteredEvents.filter((event: any) => {
+            if (!event.assignedToModel || event.assignedToModel.length === 0) {
+              return true; // Show events with no specific assignment
+            }
+
+            // Check if any of the user's intake group IDs match any of the event's assigned groups
+            const hasMatch = profile.intakeGroupId.some((userGroupId: string) =>
+              event.assignedToModel.includes(userGroupId)
+            );
+
+            return hasMatch;
+          });
+
+          console.log(
+            `📅 WeeklyCalendar: After intake group filtering: ${filteredEvents.length} events`
+          );
+        } else if (
+          profile?.intakeGroupId &&
+          typeof profile.intakeGroupId === "string"
+        ) {
+          // Handle case where intakeGroupId is a string
+          console.log(
+            `📅 WeeklyCalendar: Filtering by intake group ID (string):`,
+            profile.intakeGroupId
+          );
+
+          filteredEvents = filteredEvents.filter((event: any) => {
+            if (!event.assignedToModel || event.assignedToModel.length === 0) {
+              return true; // Show events with no specific assignment
+            }
+            return event.assignedToModel.includes(profile.intakeGroupId);
+          });
+
+          console.log(
+            `📅 WeeklyCalendar: After intake group filtering: ${filteredEvents.length} events`
+          );
+        }
+
+        // Filter by campus if available
+        if (profile?.campus) {
+          console.log(
+            `📅 WeeklyCalendar: Filtering by campus: ${profile.campus}`
+          );
+          filteredEvents = filteredEvents.filter((event: any) => {
+            if (!event.campus || event.campus === "") {
+              return true; // Show events with no campus specified
+            }
+
+            // Handle variations: "Mokopane" vs "polokwane" etc.
+            const userCampus = profile.campus
+              .toLowerCase()
+              .replace(/[^a-z]/g, "");
+            const eventCampus = event.campus
+              .toLowerCase()
+              .replace(/[^a-z]/g, "");
+
+            return (
+              userCampus === eventCampus ||
+              userCampus.includes(eventCampus) ||
+              eventCampus.includes(userCampus)
+            );
+          });
+          console.log(
+            `📅 WeeklyCalendar: After campus filtering: ${filteredEvents.length} events`
+          );
+        }
+
+        console.log(
+          `📅 WeeklyCalendar: Final filtered events: ${filteredEvents.length}`
+        );
+
+        setEvents(filteredEvents);
+      } catch (error) {
+        console.error("❌ WeeklyCalendar: Error fetching events:", error);
+        setEvents([]);
+      }
+    } catch (error) {
+      console.error("❌ WeeklyCalendar: Error in fetchEvents:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        // Mock student data - should come from context/auth
-        const studentData = {
-          intakeGroup: ["2025 Intake"],
-          campus: ["Main Campus"],
-          campusTitle: "Main Campus",
-        };
-
-        // Mock events data - replace with actual API call
-        const mockEvents: Event[] = [
-          {
-            id: "1",
-            title: "Basic Knife Skills Lecture",
-            startDate: "2025-10-02",
-            startTime: "09:00",
-            endTime: "10:30",
-            details: "Introduction to knife handling techniques",
-            lecturer: "Chef Johnson",
-            venue: "Kitchen Lab A",
-            campus: "Main Campus",
-            color: "lecture",
-            assignedToModel: ["2025 Intake"],
-          },
-          {
-            id: "2",
-            title: "Food Safety Practical",
-            startDate: "2025-10-03",
-            startTime: "14:00",
-            endTime: "16:00",
-            details: "HACCP principles hands-on",
-            lecturer: "Chef Smith",
-            venue: "Kitchen Lab B",
-            campus: "Main Campus",
-            color: "practical",
-            assignedToModel: ["2025 Intake"],
-          },
-          {
-            id: "3",
-            title: "Menu Planning Workshop",
-            startDate: "2025-10-04",
-            startTime: "11:00",
-            endTime: "12:30",
-            details: "Planning seasonal menus",
-            lecturer: "Chef Davis",
-            venue: "Classroom 101",
-            campus: "Main Campus",
-            color: "lecture",
-            assignedToModel: ["2025 Intake"],
-          },
-          {
-            id: "4",
-            title: "Baking Assessment",
-            startDate: "2025-10-07",
-            startTime: "09:00",
-            endTime: "12:00",
-            details: "Practical baking assessment",
-            lecturer: "Chef Wilson",
-            venue: "Baking Lab",
-            campus: "Main Campus",
-            color: "assessment",
-            assignedToModel: ["2025 Intake"],
-          },
-        ];
-
-        const filtered = mockEvents.filter((event) => {
-          if (!event || !event.campus || !event.assignedToModel) return false;
-          const isAssignedToGroup = event.assignedToModel.includes(
-            studentData.intakeGroup[0]
-          );
-          const isCampusMatch =
-            event.campus?.toLowerCase() ===
-            studentData.campusTitle.toLowerCase();
-          return isAssignedToGroup && isCampusMatch;
-        });
-        setEvents(filtered);
-      } catch (error) {
-        console.error("❌ Error fetching events:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchEvents();
-  }, []); // Empty dependency array - runs only once on mount
+  }, [isAuthenticated, user?.id]); // Re-fetch when auth state changes
 
   const getEventsForDate = (date: Date) => {
     return events
@@ -250,19 +338,19 @@ export default function WeeklyCalendarScreen() {
         </Card.Content>
       </Card>
 
-      {/* Monday to Wednesday */}
-      <View style={styles.weekGrid}>
-        {weekDays.slice(0, 3).map((day, index) => {
+      {/* All Days Stacked Vertically */}
+      <View style={styles.daysContainer}>
+        {weekDays.map((day, index) => {
           const date = addDays(startOfCurrentWeek, index);
           const dateEvents = getEventsForDate(date);
           return (
-            <Card key={day} style={styles.dayCard}>
+            <Card key={day} style={styles.fullWidthDayCard}>
               <Card.Content style={styles.dayHeader}>
                 <Title style={styles.dayTitle}>
                   {day} {format(date, "d")}
                 </Title>
               </Card.Content>
-              <ScrollView style={styles.dayContent}>
+              <View style={styles.dayContent}>
                 {dateEvents.length > 0 ? (
                   <View style={styles.eventsList}>
                     {dateEvents.map((event) => (
@@ -270,37 +358,9 @@ export default function WeeklyCalendarScreen() {
                     ))}
                   </View>
                 ) : (
-                  <Text style={styles.noEventsText}>No events</Text>
+                  <Text style={styles.noEventsText}>No events scheduled</Text>
                 )}
-              </ScrollView>
-            </Card>
-          );
-        })}
-      </View>
-
-      {/* Thursday to Friday */}
-      <View style={styles.weekGridBottom}>
-        {weekDays.slice(3, 5).map((day, index) => {
-          const date = addDays(startOfCurrentWeek, index + 3);
-          const dateEvents = getEventsForDate(date);
-          return (
-            <Card key={day} style={styles.dayCard}>
-              <Card.Content style={styles.dayHeader}>
-                <Title style={styles.dayTitle}>
-                  {day} {format(date, "d")}
-                </Title>
-              </Card.Content>
-              <ScrollView style={styles.dayContent}>
-                {dateEvents.length > 0 ? (
-                  <View style={styles.eventsList}>
-                    {dateEvents.map((event) => (
-                      <EventCard key={event.id} event={event} />
-                    ))}
-                  </View>
-                ) : (
-                  <Text style={styles.noEventsText}>No events</Text>
-                )}
-              </ScrollView>
+              </View>
             </Card>
           );
         })}
@@ -348,15 +408,14 @@ const styles = StyleSheet.create({
     padding: 8,
     marginHorizontal: 4,
   },
-  weekGrid: {
-    flexDirection: "row",
+  daysContainer: {
     marginHorizontal: 16,
     marginBottom: 16,
   },
-  weekGridBottom: {
-    flexDirection: "row",
-    marginHorizontal: 16,
+  fullWidthDayCard: {
+    width: "100%",
     marginBottom: 16,
+    elevation: 2,
   },
   dayCard: {
     flex: 1,
@@ -371,7 +430,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   dayContent: {
-    maxHeight: 200,
+    minHeight: 60,
   },
   eventsList: {
     padding: 8,
