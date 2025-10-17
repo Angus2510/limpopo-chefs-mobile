@@ -3,7 +3,7 @@
 // Determine environment
 const isDevelopment = __DEV__ || process.env.NODE_ENV === "development";
 
-console.log('🔧 App Environment:', {
+console.log("🔧 App Environment:", {
   isDevelopment,
   NODE_ENV: process.env.NODE_ENV,
   __DEV__,
@@ -29,7 +29,7 @@ export const API_CONFIG = {
   RETRY_DELAY: 1000,
 };
 
-console.log('🌐 API Configuration:', {
+console.log("🌐 API Configuration:", {
   primaryURL: API_CONFIG.BASE_URL,
   fallbackURL: API_CONFIG.FALLBACK_URL,
   timeout: API_CONFIG.TIMEOUT,
