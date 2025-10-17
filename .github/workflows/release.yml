@@ -1,0 +1,54 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0
+
+jobs:
+  build-and-release:
+    name: Build and Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Android APK
+        run: eas build --platform android --profile preview --non-interactive
+
+      - name: Get build download URL
+        id: build-url
+        run: |
+          BUILD_URL=$(eas build:list --platform=android --status=finished --limit=1 --json | jq -r '.[0].artifacts.buildUrl // empty')
+          echo "build_url=$BUILD_URL" >> $GITHUB_OUTPUT
+
+      - name: Download APK
+        if: steps.build-url.outputs.build_url != ''
+        run: |
+          curl -L -o limpopo-chefs-mobile.apk "${{ steps.build-url.outputs.build_url }}"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            limpopo-chefs-mobile.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
