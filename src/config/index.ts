@@ -1,13 +1,39 @@
 // Configuration file for the mobile app
 
-export const API_CONFIG = {
-  // Change this to your actual API URL
-  BASE_URL: "http://192.168.101.148:3000/api/mobile", // For development - Next.js backend (using network IP)
-  // BASE_URL: "http://localhost:3000/api/mobile", // Alternative: localhost (only works on web)
-  // BASE_URL: 'https://your-domain.com/api/mobile', // For production
+// Determine environment
+const isDevelopment = __DEV__ || process.env.NODE_ENV === "development";
 
-  TIMEOUT: 10000, // 10 seconds
+console.log('🔧 App Environment:', {
+  isDevelopment,
+  NODE_ENV: process.env.NODE_ENV,
+  __DEV__,
+});
+
+export const API_CONFIG = {
+  // Primary API endpoints
+  PORTAL_BASE_URL: "https://portal.limpopochefs.co.za/api/mobile", // Main portal server
+  VERCEL_BASE_URL: "https://limpopo-chefs-backend.vercel.app/api/mobile", // Backup Vercel server
+
+  // Automatically switch between development and production URLs
+  BASE_URL: isDevelopment
+    ? "http://192.168.101.148:3000/api/mobile" // Development
+    : "https://portal.limpopochefs.co.za/api/mobile", // Production - Portal server
+
+  // Fallback URL if primary fails
+  FALLBACK_URL: "https://limpopo-chefs-backend.vercel.app/api/mobile",
+
+  TIMEOUT: isDevelopment ? 10000 : 15000, // Longer timeout for production
+
+  // Retry configuration for mobile apps
+  RETRY_ATTEMPTS: 3,
+  RETRY_DELAY: 1000,
 };
+
+console.log('🌐 API Configuration:', {
+  primaryURL: API_CONFIG.BASE_URL,
+  fallbackURL: API_CONFIG.FALLBACK_URL,
+  timeout: API_CONFIG.TIMEOUT,
+});
 
 export const APP_CONFIG = {
   // App-wide settings

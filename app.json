@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "assets/logo-icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "assets/logo-icon.png",
       "resizeMode": "cover",
@@ -22,8 +22,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.limpopoChefs.mobile",
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "versionCode": 1
     },
     "web": {
       "favicon": "assets/favicon.png"
@@ -33,9 +32,13 @@
         "projectId": "b1dbc470-4e3c-4d09-8b0f-ab9117ed6f33"
       }
     },
-    "cli": {
-      "appVersionSource": "local"
+    "owner": "anguscarey",
+    "runtimeVersion": {
+      "policy": "appVersion"
     },
-    "owner": "anguscarey"
+    "updates": {
+      "url": "https://u.expo.dev/b1dbc470-4e3c-4d09-8b0f-ab9117ed6f33"
+    },
+    "plugins": ["expo-font"]
   }
 }

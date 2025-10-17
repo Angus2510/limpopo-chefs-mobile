@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Alert } from "react-native";
 import { Card, Title, Button, ActivityIndicator } from "react-native-paper";
 import { Camera } from "expo-camera";
-import { BarCodeScanner } from "expo-barcode-scanner";
+// import { BarCodeScanner } from "expo-barcode-scanner"; // Temporarily disabled
 import StudentAPI from "../services/api";
 
 export default function ScanAttendanceScreen() {
@@ -68,32 +68,25 @@ export default function ScanAttendanceScreen() {
 
   return (
     <View style={styles.container}>
-      <BarCodeScanner
-        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-        style={styles.camera}
-      />
-
-      <View style={styles.overlay}>
-        <View style={styles.scanFrame} />
-        <Text style={styles.instructionText}>
-          Point camera at QR code to mark attendance
-        </Text>
-
-        {scanned && (
-          <View style={styles.resultContainer}>
-            {loading ? (
-              <ActivityIndicator size="large" color="#fff" />
-            ) : (
-              <Button
-                mode="contained"
-                onPress={() => setScanned(false)}
-                style={styles.scanAgainButton}
-              >
-                Scan Again
-              </Button>
-            )}
-          </View>
-        )}
+      <View style={styles.camera}>
+        <Card style={styles.placeholderCard}>
+          <Card.Content>
+            <Title>QR Scanner Temporarily Unavailable</Title>
+            <Text style={styles.placeholderText}>
+              The barcode scanner will be re-enabled in the next update. For
+              now, you can manually mark attendance.
+            </Text>
+            <Button
+              mode="contained"
+              onPress={() =>
+                Alert.alert("Manual Attendance", "Feature coming soon!")
+              }
+              style={styles.manualButton}
+            >
+              Manual Attendance
+            </Button>
+          </Card.Content>
+        </Card>
       </View>
     </View>
   );
@@ -153,5 +146,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     textAlign: "center",
+  },
+  placeholderCard: {
+    margin: 16,
+    elevation: 4,
+  },
+  placeholderText: {
+    marginTop: 16,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 24,
+  },
+  manualButton: {
+    marginTop: 20,
+    backgroundColor: "#2196F3",
   },
 });
