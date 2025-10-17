@@ -300,9 +300,5 @@ function MainStackNavigator() {
 }
 
 export default function AppNavigator() {
-  return (
-    <NavigationContainer>
-      <MainStackNavigator />
-    </NavigationContainer>
-  );
+  return <MainStackNavigator />;
 }
