@@ -9,9 +9,13 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
+import { useAuth } from "../contexts/AuthContext";
 
 // Import screens
+import LoginScreen from "../screens/LoginScreen";
 import DashboardScreen from "../screens/DashboardScreen";
 import AttendanceScreen from "../screens/AttendanceScreen";
 import ScanAttendanceScreen from "../screens/ScanAttendanceScreen";
@@ -26,12 +30,38 @@ import WeeklyCalendarScreen from "../screens/WeeklyCalendarScreen";
 
 // More Home Screen component
 function MoreHomeScreen({ navigation }: any) {
+  const { logout } = useAuth();
   console.log("MoreHomeScreen rendered"); // Debug log
+
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await logout();
+          } catch (error) {
+            console.error("Logout error:", error);
+            Alert.alert("Error", "Failed to logout. Please try again.");
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "#f5f5f5" }}>
       <View style={{ padding: 20 }}>
-        <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 20 }}>
+        <Text
+          style={{
+            fontSize: 24,
+            fontWeight: "bold",
+            marginBottom: 20,
+            color: "#333",
+          }}
+        >
           More Options
         </Text>
 
@@ -73,7 +103,9 @@ function MoreHomeScreen({ navigation }: any) {
           }}
           onPress={() => navigation.navigate("Fees")}
         >
-          <Text style={{ fontSize: 16, fontWeight: "500" }}>💰 Fees</Text>
+          <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
+            💰 Fees
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -90,7 +122,9 @@ function MoreHomeScreen({ navigation }: any) {
           }}
           onPress={() => navigation.navigate("Downloads")}
         >
-          <Text style={{ fontSize: 16, fontWeight: "500" }}>📥 Downloads</Text>
+          <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
+            📥 Downloads
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -107,7 +141,9 @@ function MoreHomeScreen({ navigation }: any) {
           }}
           onPress={() => navigation.navigate("Profile")}
         >
-          <Text style={{ fontSize: 16, fontWeight: "500" }}>👤 Profile</Text>
+          <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
+            👤 Profile
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -124,7 +160,7 @@ function MoreHomeScreen({ navigation }: any) {
           }}
           onPress={() => navigation.navigate("SOR")}
         >
-          <Text style={{ fontSize: 16, fontWeight: "500" }}>
+          <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
             📋 Student Records
           </Text>
         </TouchableOpacity>
@@ -143,8 +179,30 @@ function MoreHomeScreen({ navigation }: any) {
           }}
           onPress={() => navigation.navigate("WEL")}
         >
-          <Text style={{ fontSize: 16, fontWeight: "500" }}>
+          <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
             💼 Work Experience
+          </Text>
+        </TouchableOpacity>
+
+        {/* Logout Button */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#f44336",
+            padding: 20,
+            borderRadius: 8,
+            marginTop: 20,
+            marginBottom: 10,
+            elevation: 3,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.3,
+            shadowRadius: 3,
+            alignItems: "center",
+          }}
+          onPress={handleLogout}
+        >
+          <Text style={{ fontSize: 18, fontWeight: "bold", color: "white" }}>
+            🚪 Logout
           </Text>
         </TouchableOpacity>
       </View>
@@ -300,5 +358,48 @@ function MainStackNavigator() {
 }
 
 export default function AppNavigator() {
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  // Debug logging
+  console.log("🔐 AppNavigator Debug:", {
+    isLoading,
+    isAuthenticated,
+    hasUser: !!user,
+    userInfo: user ? { id: user.id, email: user.email } : null,
+  });
+
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    console.log("📱 Showing loading screen...");
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2196F3" />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    console.log("🔒 User not authenticated - showing login screen");
+    return <LoginScreen />;
+  }
+
+  // Show main app if authenticated
+  console.log("✅ User authenticated - showing main app");
   return <MainStackNavigator />;
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#666",
+  },
+});

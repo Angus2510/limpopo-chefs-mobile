@@ -45,42 +45,66 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
+      console.log("🔐 AuthContext: Starting auth check...");
       setIsLoading(true);
       const isAuth = await AuthService.isAuthenticated();
+      console.log("🔐 AuthContext: isAuthenticated result:", isAuth);
 
       if (isAuth) {
+        console.log(
+          "✅ AuthContext: User is authenticated, getting user data..."
+        );
         const userData = await AuthService.getUser();
+        console.log("✅ AuthContext: Local user data:", userData);
         setUser(userData);
 
         // Try to refresh user data from server
-        const currentUser = await AuthService.getCurrentUser();
-        if (currentUser) {
-          setUser(currentUser);
+        try {
+          const currentUser = await AuthService.getCurrentUser();
+          console.log("✅ AuthContext: Server user data:", currentUser);
+          if (currentUser) {
+            setUser(currentUser);
 
-          // Load student profile data
-          try {
-            const profileResponse = await StudentAPI.getStudentProfile(
-              currentUser.id
-            );
-            const profileData = (profileResponse as any)?.success
-              ? (profileResponse as any).data
-              : profileResponse;
-            setStudentProfile(profileData);
-            console.log("✅ AuthContext: Student profile loaded:", profileData);
-          } catch (profileError) {
-            console.log(
-              "⚠️ AuthContext: Failed to load student profile:",
-              profileError
-            );
+            // Load student profile data
+            try {
+              const profileResponse = await StudentAPI.getStudentProfile(
+                currentUser.id
+              );
+              const profileData = (profileResponse as any)?.success
+                ? (profileResponse as any).data
+                : profileResponse;
+              setStudentProfile(profileData);
+              console.log(
+                "✅ AuthContext: Student profile loaded:",
+                profileData
+              );
+            } catch (profileError) {
+              console.log(
+                "⚠️ AuthContext: Failed to load student profile:",
+                profileError
+              );
+            }
           }
+        } catch (serverError) {
+          console.log(
+            "⚠️ AuthContext: Server auth check failed, using local data:",
+            serverError
+          );
+          // Keep the local user data even if server check fails
         }
+      } else {
+        console.log("❌ AuthContext: User is not authenticated");
+        setUser(null);
+        setStudentProfile(null);
       }
     } catch (error) {
-      console.log("Auth check error:", error);
+      console.log("❌ AuthContext: Auth check error:", error);
       // If there's an error, clear any stored auth data
       await AuthService.logout();
       setUser(null);
+      setStudentProfile(null);
     } finally {
+      console.log("🔐 AuthContext: Auth check completed, isLoading = false");
       setIsLoading(false);
     }
   };

@@ -1,30 +1,29 @@
 // Configuration file for the mobile app
 
-// Determine environment
-const isDevelopment = __DEV__ || process.env.NODE_ENV === "development";
+// FORCE CONSISTENT BEHAVIOR: Always use the same settings
+// This ensures Expo Go and standalone apps work identically
+const FORCE_PRODUCTION_MODE = true;
 
 console.log("🔧 App Environment:", {
-  isDevelopment,
-  NODE_ENV: process.env.NODE_ENV,
-  __DEV__,
+  forcedMode: "ALWAYS_PRODUCTION",
+  reason: "Ensuring consistent behavior between Expo Go and standalone",
 });
 
 export const API_CONFIG = {
-  // Primary API endpoints
-  PORTAL_BASE_URL: "https://portal.limpopochefs.co.za/api/mobile", // Main portal server
-  VERCEL_BASE_URL: "https://limpopo-chefs-backend.vercel.app/api/mobile", // Backup Vercel server
+  // ALWAYS use the same API endpoints regardless of environment
+  PORTAL_BASE_URL: "https://portal.limpopochefs.co.za/api/mobile",
+  VERCEL_BASE_URL: "https://limpopo-chefs-backend.vercel.app/api/mobile",
 
-  // Automatically switch between development and production URLs
-  BASE_URL: isDevelopment
-    ? "http://192.168.101.148:3000/api/mobile" // Development
-    : "https://portal.limpopochefs.co.za/api/mobile", // Production - Portal server
+  // FIXED: Always use Portal server (no environment switching)
+  BASE_URL: "https://portal.limpopochefs.co.za/api/mobile",
 
   // Fallback URL if primary fails
   FALLBACK_URL: "https://limpopo-chefs-backend.vercel.app/api/mobile",
 
-  TIMEOUT: isDevelopment ? 10000 : 15000, // Longer timeout for production
+  // FIXED: Same timeout for all environments
+  TIMEOUT: 15000,
 
-  // Retry configuration for mobile apps
+  // Retry configuration
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
 };
