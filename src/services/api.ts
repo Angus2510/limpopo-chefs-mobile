@@ -162,28 +162,109 @@ export class StudentAPI {
   static async getAttendanceRecords(
     studentId: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    year?: number
   ): Promise<AttendanceRecord[]> {
     return apiCallWithFailover(async (api) => {
-      let url = `/students/${studentId}/attendance`;
+      let url = `/api/mobile/students/${studentId}/attendance`;
+      const params = new URLSearchParams();
+      
       if (startDate && endDate) {
-        url += `?startDate=${startDate}&endDate=${endDate}`;
+        params.append('startDate', startDate);
+        params.append('endDate', endDate);
       }
+      
+      if (year) {
+        params.append('year', year.toString());
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      console.log("📅 Fetching attendance records from:", url);
       const response = await api.get(url);
-      return response.data;
+      
+      // Handle the server response format
+      if (response.data.success && response.data.data) {
+        console.log("✅ Attendance data received:", {
+          totalRecords: response.data.data.totalRecords,
+          year: response.data.data.year,
+          hasWelRecords: response.data.data.welRecords?.length > 0
+        });
+        return response.data.data.attendance;
+      } else {
+        throw new Error(response.data.error || 'Failed to fetch attendance records');
+      }
+    });
+  }
+
+  // New method to get detailed attendance data with WEL records
+  static async getAttendanceWithWEL(
+    studentId: string,
+    year?: number
+  ): Promise<{
+    attendance: AttendanceRecord[];
+    welRecords: any[];
+    totalRecords: number;
+    year: number;
+  }> {
+    return apiCallWithFailover(async (api) => {
+      let url = `/api/mobile/students/${studentId}/attendance`;
+      if (year) {
+        url += `?year=${year}`;
+      }
+      
+      console.log("📅 Fetching detailed attendance from:", url);
+      const response = await api.get(url);
+      
+      if (response.data.success && response.data.data) {
+        return {
+          attendance: response.data.data.attendance,
+          welRecords: response.data.data.welRecords || [],
+          totalRecords: response.data.data.totalRecords,
+          year: response.data.data.year,
+        };
+      } else {
+        throw new Error(response.data.error || 'Failed to fetch attendance records');
+      }
     });
   }
 
   static async scanAttendance(
-    qrData: string,
+    qrCodeData: string,
     studentId: string
-  ): Promise<AttendanceRecord> {
+  ): Promise<any> {
     return apiCallWithFailover(async (api) => {
-      const response = await api.post("/attendance/scan", {
-        qrData,
+      // Parse the QR code data (assuming it's JSON string)
+      let parsedQrData;
+      try {
+        parsedQrData =
+          typeof qrCodeData === "string" ? JSON.parse(qrCodeData) : qrCodeData;
+      } catch (error) {
+        throw new Error("Invalid QR code format");
+      }
+
+      // Format the request to match server expectations
+      const requestData = {
+        qrData: {
+          campusId: parsedQrData.campusId,
+          campusTitle: parsedQrData.campusTitle,
+          intakeGroups: parsedQrData.intakeGroups || [],
+          outcome: {
+            id: parsedQrData.outcome?.id || parsedQrData.outcomeId,
+            title: parsedQrData.outcome?.title || parsedQrData.outcomeTitle,
+          },
+          date: parsedQrData.date,
+          timestamp: parsedQrData.timestamp,
+        },
         studentId,
         timestamp: new Date().toISOString(),
-      });
+        location: parsedQrData.location || undefined,
+      };
+
+      console.log("📤 Sending attendance scan request:", requestData);
+      const response = await api.post("/attendance/scan", requestData);
       return response.data;
     });
   }

@@ -1,16 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Alert } from "react-native";
 import { Card, Title, Button, ActivityIndicator } from "react-native-paper";
-import { Camera } from "expo-camera";
-// import { BarCodeScanner } from "expo-barcode-scanner"; // Temporarily disabled
+import { Camera, CameraView, BarcodeScanningResult } from "expo-camera";
+import { useAuth } from "../contexts/AuthContext";
 import StudentAPI from "../services/api";
 
 export default function ScanAttendanceScreen() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { user, isAuthenticated } = useAuth();
 
-  const studentId = "current-student-id"; // Replace with actual student ID
+  const studentId = user?.id;
+
+  // Check if user is logged in
+  if (!isAuthenticated || !user) {
+    return (
+      <View style={styles.container}>
+        <Card style={styles.card}>
+          <Card.Content>
+            <Title>Authentication Required</Title>
+            <Text style={styles.errorText}>
+              Please log in to scan attendance QR codes.
+            </Text>
+          </Card.Content>
+        </Card>
+      </View>
+    );
+  }
 
   useEffect(() => {
     (async () => {
@@ -19,24 +36,36 @@ export default function ScanAttendanceScreen() {
     })();
   }, []);
 
-  const handleBarCodeScanned = async ({
-    type,
-    data,
-  }: {
-    type: string;
-    data: string;
-  }) => {
+  const handleBarCodeScanned = async (result: BarcodeScanningResult) => {
+    if (scanned || loading) return;
+
     setScanned(true);
     setLoading(true);
 
     try {
-      await StudentAPI.scanAttendance(data, studentId);
-      Alert.alert("Success", "Attendance marked successfully!", [
-        { text: "OK", onPress: () => setScanned(false) },
-      ]);
-    } catch (error) {
-      Alert.alert("Error", "Failed to mark attendance. Please try again.");
-      setScanned(false);
+      if (!studentId) {
+        throw new Error("No student ID found. Please log in again.");
+      }
+
+      console.log("📱 Scanned QR code:", result.data);
+      const response = await StudentAPI.scanAttendance(result.data, studentId);
+
+      if (response.success) {
+        Alert.alert(
+          "Success",
+          response.data?.message || "Attendance marked successfully!",
+          [{ text: "OK", onPress: () => setScanned(false) }]
+        );
+      } else {
+        throw new Error(response.error || "Failed to mark attendance");
+      }
+    } catch (error: any) {
+      console.error("❌ Attendance scan error:", error);
+      Alert.alert(
+        "Error",
+        error.message || "Failed to mark attendance. Please try again.",
+        [{ text: "OK", onPress: () => setScanned(false) }]
+      );
     } finally {
       setLoading(false);
     }
@@ -68,26 +97,42 @@ export default function ScanAttendanceScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.camera}>
-        <Card style={styles.placeholderCard}>
-          <Card.Content>
-            <Title>QR Scanner Temporarily Unavailable</Title>
-            <Text style={styles.placeholderText}>
-              The barcode scanner will be re-enabled in the next update. For
-              now, you can manually mark attendance.
-            </Text>
-            <Button
-              mode="contained"
-              onPress={() =>
-                Alert.alert("Manual Attendance", "Feature coming soon!")
-              }
-              style={styles.manualButton}
-            >
-              Manual Attendance
-            </Button>
-          </Card.Content>
-        </Card>
-      </View>
+      <CameraView
+        style={styles.camera}
+        facing="back"
+        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+        barcodeScannerSettings={{
+          barcodeTypes: ["qr"],
+        }}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.scanFrame} />
+          <Text style={styles.instructionText}>
+            Point your camera at the QR code to mark attendance
+          </Text>
+
+          {loading && (
+            <View style={styles.resultContainer}>
+              <ActivityIndicator size="large" color="#fff" />
+              <Text style={[styles.instructionText, { marginTop: 16 }]}>
+                Marking attendance...
+              </Text>
+            </View>
+          )}
+
+          {scanned && !loading && (
+            <View style={styles.resultContainer}>
+              <Button
+                mode="contained"
+                onPress={() => setScanned(false)}
+                style={styles.scanAgainButton}
+              >
+                Scan Again
+              </Button>
+            </View>
+          )}
+        </View>
+      </CameraView>
     </View>
   );
 }

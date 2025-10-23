@@ -36,12 +36,9 @@ export interface Assignment {
 
 export interface AttendanceRecord {
   id: string;
-  studentId: string;
   date: string;
-  status: "present" | "absent" | "late";
-  timeIn?: string;
-  timeOut?: string;
-  location?: string;
+  status: "full" | "absent" | "absent with reason" | "W.E.L" | "sick";
+  timeCheckedIn?: string;
 }
 
 export interface Fee {
@@ -244,6 +241,17 @@ export interface WELRecord {
   establishmentName: string;
   establishmentContact: string;
   evaluated: boolean;
+}
+
+export interface AttendanceResponse {
+  success: boolean;
+  data?: {
+    attendance: AttendanceRecord[];
+    welRecords?: WELRecord[];
+    year: number;
+    totalRecords: number;
+  };
+  error?: string;
 }
 
 export interface DashboardData {
