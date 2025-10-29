@@ -223,8 +223,17 @@ export default function WeeklyCalendarScreen() {
   const getEventsForDate = (date: Date) => {
     return events
       .filter((event) => {
-        const eventDate = new Date(event.startDate);
-        return format(eventDate, "yyyy-MM-dd") === format(date, "yyyy-MM-dd");
+        // Parse the server date and extract just the date part to avoid timezone issues
+        const eventDateString = event.startDate.split("T")[0]; // Get "2025-10-29" part
+        const localDateString = format(date, "yyyy-MM-dd");
+
+        console.log("🗓️ Comparing dates:", {
+          eventDateString,
+          localDateString,
+          match: eventDateString === localDateString,
+        });
+
+        return eventDateString === localDateString;
       })
       .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
   };

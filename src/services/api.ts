@@ -166,7 +166,7 @@ export class StudentAPI {
     year?: number
   ): Promise<AttendanceRecord[]> {
     return apiCallWithFailover(async (api) => {
-      let url = `/api/mobile/students/${studentId}/attendance`;
+      let url = `/students/${studentId}/attendance`;
       const params = new URLSearchParams();
 
       if (startDate && endDate) {
@@ -212,25 +212,62 @@ export class StudentAPI {
     year: number;
   }> {
     return apiCallWithFailover(async (api) => {
-      let url = `/api/mobile/students/${studentId}/attendance`;
+      let url = `/students/${studentId}/attendance`;
       if (year) {
         url += `?year=${year}`;
       }
 
-      console.log("📅 Fetching detailed attendance from:", url);
-      const response = await api.get(url);
+      console.log("📅 API: Starting attendance fetch", {
+        studentId,
+        year,
+        fullUrl: url,
+        baseURL: api.defaults.baseURL,
+      });
 
-      if (response.data.success && response.data.data) {
-        return {
-          attendance: response.data.data.attendance,
-          welRecords: response.data.data.welRecords || [],
-          totalRecords: response.data.data.totalRecords,
-          year: response.data.data.year,
-        };
-      } else {
-        throw new Error(
-          response.data.error || "Failed to fetch attendance records"
-        );
+      try {
+        const response = await api.get(url);
+
+        console.log("🔍 API: Raw response received", {
+          status: response.status,
+          statusText: response.statusText,
+          responseData: response.data,
+          headers: response.headers,
+        });
+
+        if (response.data.success && response.data.data) {
+          console.log("✅ API: Attendance fetch successful", {
+            attendanceCount: response.data.data.attendance?.length,
+            welCount: response.data.data.welRecords?.length,
+            totalRecords: response.data.data.totalRecords,
+            year: response.data.data.year,
+          });
+
+          return {
+            attendance: response.data.data.attendance,
+            welRecords: response.data.data.welRecords || [],
+            totalRecords: response.data.data.totalRecords,
+            year: response.data.data.year,
+          };
+        } else {
+          console.error("❌ API: Server returned success=false", {
+            responseData: response.data,
+            success: response.data.success,
+            data: response.data.data,
+            error: response.data.error,
+          });
+          throw new Error(
+            response.data.error || "Failed to fetch attendance records"
+          );
+        }
+      } catch (error: any) {
+        console.error("💥 API: Attendance fetch failed", {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          url: url,
+        });
+        throw error;
       }
     });
   }
@@ -330,7 +367,7 @@ export class StudentAPI {
 
       console.log("📁 Generating download URL for:", downloadId, fileName);
       const response = await api.post(
-        `/api/mobile/downloads/${downloadId}/view`,
+        `/downloads/${downloadId}/view`,
         requestData
       );
 
@@ -364,7 +401,7 @@ export class StudentAPI {
         requestData
       );
       const response = await api.post(
-        `/api/mobile/downloads/${downloadId}/file`,
+        `/downloads/${downloadId}/file`,
         requestData
       );
 
@@ -414,9 +451,7 @@ export class StudentAPI {
 
   static async getStudentResults(studentId: string): Promise<any> {
     return apiCallWithFailover(async (api) => {
-      const response = await api.get(
-        `/api/mobile/students/${studentId}/results`
-      );
+      const response = await api.get(`/students/${studentId}/results`);
       return response.data;
     });
   }

@@ -14,11 +14,11 @@ export const API_CONFIG = {
   PORTAL_BASE_URL: "https://portal.limpopochefs.co.za/api/mobile",
   VERCEL_BASE_URL: "https://limpopo-chefs-backend.vercel.app/api/mobile",
 
-  // FIXED: Always use Portal server (no environment switching)
-  BASE_URL: "https://portal.limpopochefs.co.za/api/mobile",
+  // DEVELOPMENT: Using local IP address for testing with Expo Go
+  BASE_URL: "http://192.168.101.148:3000/api/mobile",
 
   // Fallback URL if primary fails
-  FALLBACK_URL: "https://limpopo-chefs-backend.vercel.app/api/mobile",
+  FALLBACK_URL: "https://portal.limpopochefs.co.za/api/mobile",
 
   // FIXED: Same timeout for all environments
   TIMEOUT: 15000,
