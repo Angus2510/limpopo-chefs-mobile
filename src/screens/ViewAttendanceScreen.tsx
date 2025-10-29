@@ -21,7 +21,9 @@ import { AttendanceRecord, WELRecord } from "../types";
 import { format, parseISO, isValid } from "date-fns";
 
 export default function ViewAttendanceScreen() {
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<
+    AttendanceRecord[]
+  >([]);
   const [welRecords, setWelRecords] = useState<WELRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,21 +43,28 @@ export default function ViewAttendanceScreen() {
         setLoading(true);
       }
 
-      console.log("📅 Fetching attendance for student:", studentId, "Year:", selectedYear);
-      
-      const response = await StudentAPI.getAttendanceWithWEL(studentId, selectedYear);
+      console.log(
+        "📅 Fetching attendance for student:",
+        studentId,
+        "Year:",
+        selectedYear
+      );
+
+      const response = await StudentAPI.getAttendanceWithWEL(
+        studentId,
+        selectedYear
+      );
 
       console.log("✅ Attendance data received:", {
         attendanceCount: response.attendance.length,
         welCount: response.welRecords.length,
         totalRecords: response.totalRecords,
-        year: response.year
+        year: response.year,
       });
-      
+
       setAttendanceRecords(response.attendance);
       setWelRecords(response.welRecords);
       setTotalRecords(response.totalRecords);
-      
     } catch (error: any) {
       console.error("❌ Failed to fetch attendance:", error);
       Alert.alert(
@@ -115,7 +124,7 @@ export default function ViewAttendanceScreen() {
   };
 
   const changeYear = (increment: number) => {
-    setSelectedYear(prev => prev + increment);
+    setSelectedYear((prev) => prev + increment);
   };
 
   if (!isAuthenticated || !user) {
@@ -147,7 +156,10 @@ export default function ViewAttendanceScreen() {
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => fetchAttendance(true)} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => fetchAttendance(true)}
+          />
         }
       >
         {/* Year Selection */}
@@ -170,7 +182,7 @@ export default function ViewAttendanceScreen() {
             </Button>
           </View>
           <Text style={styles.recordCount}>
-            {totalRecords} record{totalRecords !== 1 ? 's' : ''} found
+            {totalRecords} record{totalRecords !== 1 ? "s" : ""} found
           </Text>
         </Surface>
 
@@ -178,12 +190,17 @@ export default function ViewAttendanceScreen() {
         {welRecords.length > 0 && (
           <Card style={styles.card}>
             <Card.Content>
-              <Title style={styles.sectionTitle}>Work Experience Learning</Title>
+              <Title style={styles.sectionTitle}>
+                Work Experience Learning
+              </Title>
               {welRecords.map((record, index) => (
                 <Surface key={index} style={styles.welRecord}>
-                  <Text style={styles.welTitle}>{record.establishmentName}</Text>
+                  <Text style={styles.welTitle}>
+                    {record.establishmentName}
+                  </Text>
                   <Text style={styles.welDate}>
-                    {formatDate(record.startDate)} - {formatDate(record.endDate)}
+                    {formatDate(record.startDate)} -{" "}
+                    {formatDate(record.endDate)}
                   </Text>
                 </Surface>
               ))}
@@ -209,7 +226,7 @@ export default function ViewAttendanceScreen() {
                     <Chip
                       style={[
                         styles.statusChip,
-                        { backgroundColor: getStatusColor(record.status) }
+                        { backgroundColor: getStatusColor(record.status) },
                       ]}
                       textStyle={styles.statusText}
                     >

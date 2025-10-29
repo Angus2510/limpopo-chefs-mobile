@@ -168,33 +168,35 @@ export class StudentAPI {
     return apiCallWithFailover(async (api) => {
       let url = `/api/mobile/students/${studentId}/attendance`;
       const params = new URLSearchParams();
-      
+
       if (startDate && endDate) {
-        params.append('startDate', startDate);
-        params.append('endDate', endDate);
+        params.append("startDate", startDate);
+        params.append("endDate", endDate);
       }
-      
+
       if (year) {
-        params.append('year', year.toString());
+        params.append("year", year.toString());
       }
-      
+
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
-      
+
       console.log("📅 Fetching attendance records from:", url);
       const response = await api.get(url);
-      
+
       // Handle the server response format
       if (response.data.success && response.data.data) {
         console.log("✅ Attendance data received:", {
           totalRecords: response.data.data.totalRecords,
           year: response.data.data.year,
-          hasWelRecords: response.data.data.welRecords?.length > 0
+          hasWelRecords: response.data.data.welRecords?.length > 0,
         });
         return response.data.data.attendance;
       } else {
-        throw new Error(response.data.error || 'Failed to fetch attendance records');
+        throw new Error(
+          response.data.error || "Failed to fetch attendance records"
+        );
       }
     });
   }
@@ -214,10 +216,10 @@ export class StudentAPI {
       if (year) {
         url += `?year=${year}`;
       }
-      
+
       console.log("📅 Fetching detailed attendance from:", url);
       const response = await api.get(url);
-      
+
       if (response.data.success && response.data.data) {
         return {
           attendance: response.data.data.attendance,
@@ -226,7 +228,9 @@ export class StudentAPI {
           year: response.data.data.year,
         };
       } else {
-        throw new Error(response.data.error || 'Failed to fetch attendance records');
+        throw new Error(
+          response.data.error || "Failed to fetch attendance records"
+        );
       }
     });
   }
@@ -314,10 +318,64 @@ export class StudentAPI {
     });
   }
 
-  static async downloadFile(downloadId: string): Promise<string> {
+  // Original download method using /view endpoint
+  static async downloadFile(
+    downloadId: string,
+    fileName?: string
+  ): Promise<string> {
     return apiCallWithFailover(async (api) => {
-      const response = await api.get(`/downloads/${downloadId}/file`);
-      return response.data.downloadUrl;
+      const requestData = {
+        fileName: fileName || undefined,
+      };
+
+      console.log("📁 Generating download URL for:", downloadId, fileName);
+      const response = await api.post(
+        `/api/mobile/downloads/${downloadId}/view`,
+        requestData
+      );
+
+      if (response.data.success && response.data.signedUrl) {
+        console.log("✅ Download URL generated successfully");
+        return response.data.signedUrl;
+      } else {
+        throw new Error(
+          response.data.error || "Failed to generate download URL"
+        );
+      }
+    });
+  }
+
+  // New download method using /file endpoint with fileKey and fileName
+  static async downloadFileWithKey(
+    downloadId: string,
+    fileName?: string,
+    fileKey?: string
+  ): Promise<string> {
+    return apiCallWithFailover(async (api) => {
+      const requestData = {
+        fileKey: fileKey || downloadId, // Use fileKey if provided, otherwise fallback to downloadId
+        fileName: fileName || `download-${downloadId}`,
+      };
+
+      console.log(
+        "📁 Generating download URL with fileKey for:",
+        downloadId,
+        "with data:",
+        requestData
+      );
+      const response = await api.post(
+        `/api/mobile/downloads/${downloadId}/file`,
+        requestData
+      );
+
+      if (response.data.signedUrl) {
+        console.log("✅ Download URL generated successfully with fileKey");
+        return response.data.signedUrl;
+      } else {
+        throw new Error(
+          response.data.error || "Failed to generate download URL"
+        );
+      }
     });
   }
 

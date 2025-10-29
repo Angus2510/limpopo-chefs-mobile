@@ -58,6 +58,7 @@ export interface DownloadItem {
   fileType: string;
   uploadDate: string;
   category: string;
+  fileKey?: string; // S3 file key for generating signed URLs
 }
 
 export interface SORRecord {
