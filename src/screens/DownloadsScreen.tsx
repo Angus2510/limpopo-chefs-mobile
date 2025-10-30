@@ -77,14 +77,21 @@ export default function DownloadsScreen() {
 
       let downloadUrl: string;
 
-      if (useS3 && download.fileKey) {
-        // Use /downloads/file endpoint for S3-based downloads with fileKey
+      // If the download already has a fileUrl (from server's downloadUrl field), use it directly
+      if (download.fileUrl && download.fileUrl.includes("amazonaws.com")) {
+        console.log(
+          "📱 Using pre-signed S3 URL from server:",
+          download.fileUrl
+        );
+        downloadUrl = download.fileUrl;
+      } else if (useS3 && download.fileKey) {
+        // Fallback: Use /downloads/file endpoint for S3-based downloads with fileKey
         downloadUrl = await StudentAPI.downloadFileWithKey(
           download.fileKey,
           download.title
         );
       } else {
-        // Use /downloads/{id}/view endpoint for direct viewing
+        // Last resort: Use /downloads/{id}/view endpoint for direct viewing
         downloadUrl = await StudentAPI.downloadFile(download.id);
       }
 

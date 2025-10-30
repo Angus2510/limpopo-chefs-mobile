@@ -306,6 +306,36 @@ export class StudentAPI {
 
       console.log("📤 Sending attendance scan request:", requestData);
       const response = await api.post("/attendance/scan", requestData);
+
+      // Enhanced response handling for new API format
+      console.log("📥 Attendance scan response:", response.data);
+
+      if (response.data.success && response.data.data) {
+        const { message, alreadyMarked, campus, outcome, date } =
+          response.data.data;
+
+        console.log("✅ Attendance scan successful:", {
+          message,
+          alreadyMarked: alreadyMarked || false,
+          campus,
+          outcome,
+          date,
+        });
+
+        // Return enhanced response with attendance status
+        return {
+          success: true,
+          data: {
+            message,
+            alreadyMarked: alreadyMarked || false,
+            campus,
+            outcome,
+            date,
+            isNewAttendance: !alreadyMarked,
+          },
+        };
+      }
+
       return response.data;
     });
   }
@@ -351,68 +381,117 @@ export class StudentAPI {
   static async getDownloads(studentId: string): Promise<DownloadItem[]> {
     return apiCallWithFailover(async (api) => {
       const response = await api.get(`/students/${studentId}/downloads`);
-      return response.data;
+
+      console.log("📁 Downloads API response:", {
+        status: response.status,
+        hasData: !!response.data,
+        dataType: typeof response.data,
+        isArray: Array.isArray(response.data),
+        dataKeys: response.data ? Object.keys(response.data) : [],
+      });
+
+      let rawDownloads: any[] = [];
+
+      // Handle different response formats
+      if (Array.isArray(response.data)) {
+        rawDownloads = response.data;
+      } else if (response.data && Array.isArray(response.data.downloads)) {
+        rawDownloads = response.data.downloads;
+      } else if (response.data && Array.isArray(response.data.data)) {
+        rawDownloads = response.data.data;
+      } else {
+        console.warn(
+          "⚠️ Unexpected downloads response format, returning empty array"
+        );
+        return [];
+      }
+
+      // Transform server data to match mobile app format
+      const transformedDownloads: DownloadItem[] = rawDownloads.map(
+        (item: any) => {
+          // Extract file type from title or documentUrl
+          const fileName = item.title || item.documentUrl || "";
+          const fileExtension =
+            fileName.split(".").pop()?.toLowerCase() || "unknown";
+
+          return {
+            id: item.id || "",
+            title: item.title || "Untitled Document",
+            description: item.description || "",
+            fileUrl: item.downloadUrl || item.documentUrl || item.fileUrl || "", // Use server's downloadUrl first
+            fileType: fileExtension,
+            uploadDate:
+              item.uploadDate || item.createdAt || new Date().toISOString(),
+            category: item.category || "Learning Materials",
+            fileKey: item.fileKey || item.filePath || item.documentUrl || "",
+          };
+        }
+      );
+
+      console.log("📁 Transformed downloads:", {
+        count: transformedDownloads.length,
+        sampleItem: transformedDownloads[0]
+          ? Object.keys(transformedDownloads[0])
+          : null,
+      });
+
+      return transformedDownloads;
     });
   }
 
-  // Original download method using /view endpoint
+  // Direct download method using /download endpoint
   static async downloadFile(
     downloadId: string,
     fileName?: string
   ): Promise<string> {
     return apiCallWithFailover(async (api) => {
-      const requestData = {
-        fileName: fileName || undefined,
-      };
-
-      console.log("📁 Generating download URL for:", downloadId, fileName);
-      const response = await api.post(
-        `/downloads/${downloadId}/view`,
-        requestData
+      console.log(
+        "📁 Generating direct download URL for:",
+        downloadId,
+        fileName
       );
 
-      if (response.data.success && response.data.signedUrl) {
-        console.log("✅ Download URL generated successfully");
-        return response.data.signedUrl;
-      } else {
-        throw new Error(
-          response.data.error || "Failed to generate download URL"
+      // Try to get a signed download URL first
+      try {
+        const response = await api.get(
+          `/downloads/${downloadId}/url?download=true`
+        );
+        if (response.data.signedUrl) {
+          console.log("✅ Got signed download URL from server");
+          return response.data.signedUrl;
+        }
+      } catch (error) {
+        console.log(
+          "⚠️ Signed download URL not available, using direct download URL"
         );
       }
+
+      // Fallback: Return direct download URL with download parameter
+      const downloadUrl = `${api.defaults.baseURL}/downloads/${downloadId}/download`;
+      console.log("✅ Generated direct download URL:", downloadUrl);
+      return downloadUrl;
     });
   }
 
-  // New download method using /file endpoint with fileKey and fileName
+  // New download method using /file endpoint with fileKey and fileName for direct downloads
   static async downloadFileWithKey(
-    downloadId: string,
-    fileName?: string,
-    fileKey?: string
+    fileKey: string,
+    fileName?: string
   ): Promise<string> {
     return apiCallWithFailover(async (api) => {
-      const requestData = {
-        fileKey: fileKey || downloadId, // Use fileKey if provided, otherwise fallback to downloadId
-        fileName: fileName || `download-${downloadId}`,
-      };
+      console.log("� Creating direct download with fileKey:", {
+        fileKey,
+        fileName,
+      });
 
-      console.log(
-        "📁 Generating download URL with fileKey for:",
-        downloadId,
-        "with data:",
-        requestData
-      );
-      const response = await api.post(
-        `/downloads/${downloadId}/file`,
-        requestData
-      );
-
-      if (response.data.signedUrl) {
-        console.log("✅ Download URL generated successfully with fileKey");
-        return response.data.signedUrl;
-      } else {
-        throw new Error(
-          response.data.error || "Failed to generate download URL"
-        );
-      }
+      // Return direct URL with fileKey and download parameter to force download instead of view
+      const downloadUrl = `${
+        api.defaults.baseURL
+      }/downloads/file?fileKey=${encodeURIComponent(
+        fileKey
+      )}&fileName=${encodeURIComponent(fileName || "download")}&download=true`;
+      console.log("✅ Generated direct download URL:", downloadUrl);
+      return downloadUrl;
     });
   }
 

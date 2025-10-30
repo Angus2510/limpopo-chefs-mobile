@@ -4,6 +4,10 @@ import { Card, Title, Button, ActivityIndicator } from "react-native-paper";
 import { Camera, CameraView, BarcodeScanningResult } from "expo-camera";
 import { useAuth } from "../contexts/AuthContext";
 import StudentAPI from "../services/api";
+import {
+  showAttendanceMessage,
+  createAttendanceMessage,
+} from "../utils/attendanceMessages";
 
 export default function ScanAttendanceScreen() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -50,21 +54,30 @@ export default function ScanAttendanceScreen() {
       console.log("📱 Scanned QR code:", result.data);
       const response = await StudentAPI.scanAttendance(result.data, studentId);
 
-      if (response.success) {
-        Alert.alert(
-          "Success",
-          response.data?.message || "Attendance marked successfully!",
-          [{ text: "OK", onPress: () => setScanned(false) }]
-        );
-      } else {
-        throw new Error(response.error || "Failed to mark attendance");
+      // Use the new message utility for consistent UI feedback
+      const messageConfig = createAttendanceMessage(response);
+      showAttendanceMessage(messageConfig, () => setScanned(false));
+
+      // Log additional details for debugging
+      if (response.success && response.data) {
+        const { campus, outcome, date, alreadyMarked } = response.data;
+        console.log("📊 Attendance details:", {
+          campus,
+          outcome,
+          date,
+          wasAlreadyMarked: alreadyMarked,
+          isNewAttendance: !alreadyMarked,
+        });
       }
     } catch (error: any) {
       console.error("❌ Attendance scan error:", error);
-      Alert.alert(
-        "Error",
-        error.message || "Failed to mark attendance. Please try again.",
-        [{ text: "OK", onPress: () => setScanned(false) }]
+      showAttendanceMessage(
+        {
+          title: "Connection Failed",
+          message: error.message || "Network error. Please try again.",
+          type: "error",
+        },
+        () => setScanned(false)
       );
     } finally {
       setLoading(false);
