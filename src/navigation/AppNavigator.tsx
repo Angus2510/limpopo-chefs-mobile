@@ -13,6 +13,7 @@ import {
   Alert,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
+import LoadingScreen from "../components/LoadingScreen";
 
 // Import screens
 import LoginScreen from "../screens/LoginScreen";
@@ -27,6 +28,7 @@ import SORScreen from "../screens/SORScreen";
 import WELScreen from "../screens/WELScreen";
 import WELLocationsScreen from "../screens/WELLocationsScreen";
 import WeeklyCalendarScreen from "../screens/WeeklyCalendarScreen";
+import AnnouncementsScreen from "../screens/AnnouncementsScreen";
 
 // More Home Screen component
 function MoreHomeScreen({ navigation }: any) {
@@ -86,6 +88,25 @@ function MoreHomeScreen({ navigation }: any) {
         >
           <Text style={{ fontSize: 18, fontWeight: "bold", color: "#1565c0" }}>
             📅 Weekly Schedule
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: "white",
+            padding: 15,
+            borderRadius: 8,
+            marginBottom: 10,
+            elevation: 2,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.2,
+            shadowRadius: 2,
+          }}
+          onPress={() => navigation.navigate("Announcements")}
+        >
+          <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
+            📢 Announcements
           </Text>
         </TouchableOpacity>
 
@@ -245,6 +266,11 @@ function MoreStackNavigator() {
         options={{ title: "Weekly Schedule" }}
       />
       <MoreStack.Screen
+        name="Announcements"
+        component={AnnouncementsScreen}
+        options={{ title: "Announcements" }}
+      />
+      <MoreStack.Screen
         name="Fees"
         component={FeesScreen}
         options={{ title: "Fees" }}
@@ -371,12 +397,7 @@ export default function AppNavigator() {
   // Show loading screen while checking authentication
   if (isLoading) {
     console.log("📱 Showing loading screen...");
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
+    return <LoadingScreen message="Checking authentication..." />;
   }
 
   // Show login screen if not authenticated

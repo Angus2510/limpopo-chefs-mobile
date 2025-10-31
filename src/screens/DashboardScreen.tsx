@@ -23,6 +23,19 @@ import AppLogo from "../components/AppLogo";
 import { DashboardData, Student } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 
+const getPriorityColor = (priority: string) => {
+  switch (priority) {
+    case "high":
+      return "#f44336";
+    case "medium":
+      return "#FF9800";
+    case "low":
+      return "#4CAF50";
+    default:
+      return "#757575";
+  }
+};
+
 export default function DashboardScreen() {
   const navigation = useNavigation<StackNavigationProp<any>>();
   const { user, studentProfile, isAuthenticated, refreshStudentProfile } =
@@ -253,19 +266,15 @@ export default function DashboardScreen() {
         recentAttendance: [
           {
             id: "1",
-            studentId: user.id,
             date: "2025-10-06",
-            status: "present",
-            timeIn: "08:00",
-            location: "Main Kitchen",
+            status: "full",
+            timeCheckedIn: "08:00",
           },
           {
             id: "2",
-            studentId: user.id,
             date: "2025-10-05",
-            status: "present",
-            timeIn: "08:15",
-            location: "Main Kitchen",
+            status: "full",
+            timeCheckedIn: "08:15",
           },
         ],
         pendingFees: [
@@ -277,17 +286,22 @@ export default function DashboardScreen() {
             status: "unpaid",
           },
         ],
-        announcements: [
-          {
-            id: "1",
-            title: "Kitchen Renovation Update",
-            content:
-              "The main kitchen will be closed for renovations from Oct 15-17",
-            date: "2025-10-06",
-            priority: "high",
-            read: false,
-          },
-        ],
+        announcements: await (async () => {
+          try {
+            const announcements = await StudentAPI.getAnnouncements(user.id);
+            return announcements.sort((a, b) => {
+              // Sort by priority first, then by date
+              const priorityOrder = { high: 3, medium: 2, low: 1 };
+              const priorityDiff =
+                priorityOrder[b.priority] - priorityOrder[a.priority];
+              if (priorityDiff !== 0) return priorityDiff;
+              return new Date(b.date).getTime() - new Date(a.date).getTime();
+            });
+          } catch (error) {
+            console.log("⚠️ Dashboard: Failed to load announcements", error);
+            return [];
+          }
+        })(),
       };
       setDashboardData(dashboardData);
     } catch (error) {
@@ -443,11 +457,30 @@ export default function DashboardScreen() {
           <Title>Announcements</Title>
           {dashboardData.announcements.length > 0 ? (
             dashboardData.announcements.slice(0, 2).map((announcement) => (
-              <View key={announcement.id} style={styles.announcementItem}>
+              <View
+                key={announcement.id}
+                style={[
+                  styles.announcementItem,
+                  {
+                    borderLeftColor: getPriorityColor(announcement.priority),
+                    borderLeftWidth: 4,
+                  },
+                ]}
+              >
                 <View style={styles.announcementHeader}>
-                  <Text style={styles.announcementTitle}>
-                    {announcement.title}
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.announcementTitle}>
+                      {announcement.title}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.priorityIndicator,
+                        { color: getPriorityColor(announcement.priority) },
+                      ]}
+                    >
+                      {announcement.priority.toUpperCase()}
+                    </Text>
+                  </View>
                   <Text style={styles.announcementDate}>
                     {new Date(announcement.date).toLocaleDateString()}
                   </Text>
@@ -459,6 +492,15 @@ export default function DashboardScreen() {
             ))
           ) : (
             <Paragraph>No new announcements</Paragraph>
+          )}
+          {dashboardData.announcements.length > 0 && (
+            <Button
+              mode="text"
+              onPress={() => navigation.navigate("Announcements")}
+              style={{ marginTop: 8 }}
+            >
+              View All Announcements
+            </Button>
           )}
         </Card.Content>
       </Card>
@@ -617,6 +659,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
     flex: 1,
+  },
+  priorityIndicator: {
+    fontSize: 10,
+    fontWeight: "600",
+    marginTop: 2,
   },
   announcementDate: {
     fontSize: 12,

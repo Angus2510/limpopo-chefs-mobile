@@ -152,9 +152,43 @@ export class AuthService {
 
   // Check if user is authenticated
   static async isAuthenticated(): Promise<boolean> {
-    const token = await this.getToken();
-    const user = await this.getUser();
-    return !!(token && user);
+    try {
+      const token = await this.getToken();
+      const user = await this.getUser();
+
+      if (!token || !user) {
+        console.log("🔐 AuthService: No token or user found");
+        return false;
+      }
+
+      // Check if token is expired by trying a simple API call
+      try {
+        const testResponse = await authApi.get("/auth/verify", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log("✅ AuthService: Token verification successful");
+        return true;
+      } catch (verifyError: any) {
+        console.log(
+          "⚠️ AuthService: Token verification failed, checking if we can refresh..."
+        );
+
+        // If token verification fails, try to refresh if we have a refresh token
+        const refreshedToken = await this.refreshToken();
+        if (refreshedToken) {
+          console.log("✅ AuthService: Token refreshed successfully");
+          return true;
+        }
+
+        console.log(
+          "❌ AuthService: Token refresh failed, user needs to login again"
+        );
+        return false;
+      }
+    } catch (error) {
+      console.log("❌ AuthService: Authentication check failed:", error);
+      return false;
+    }
   }
 
   // Get current user profile
@@ -182,6 +216,51 @@ export class AuthService {
     if (currentUser) {
       const updatedUser = { ...currentUser, ...userData };
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+    }
+  }
+
+  // Auto-login attempt on app start
+  static async attemptAutoLogin(): Promise<User | null> {
+    try {
+      console.log("🔄 AuthService: Attempting auto-login...");
+
+      const isAuth = await this.isAuthenticated();
+      if (!isAuth) {
+        console.log("❌ AuthService: Auto-login failed - not authenticated");
+        return null;
+      }
+
+      const user = await this.getUser();
+      if (user) {
+        console.log("✅ AuthService: Auto-login successful for user:", user.id);
+        return user;
+      }
+
+      console.log("❌ AuthService: Auto-login failed - no user data");
+      return null;
+    } catch (error) {
+      console.log("❌ AuthService: Auto-login error:", error);
+      // Clear any corrupted auth data
+      await this.logout();
+      return null;
+    }
+  }
+
+  // Check if we need to refresh the token proactively
+  static async checkTokenValidity(): Promise<boolean> {
+    try {
+      const token = await this.getToken();
+      if (!token) return false;
+
+      // Try a lightweight API call to check token validity
+      await authApi.get("/auth/verify", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return true;
+    } catch (error) {
+      console.log("🔄 AuthService: Token invalid, attempting refresh...");
+      const refreshedToken = await this.refreshToken();
+      return !!refreshedToken;
     }
   }
 }

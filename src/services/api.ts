@@ -611,14 +611,96 @@ export class StudentAPI {
   // Announcements
   static async getAnnouncements(studentId: string): Promise<Announcement[]> {
     return apiCallWithFailover(async (api) => {
-      const response = await api.get(`/students/${studentId}/announcements`);
-      return response.data;
+      try {
+        // Try the student-specific announcements endpoint first
+        const response = await api.get(`/students/${studentId}/announcements`);
+        return response.data;
+      } catch (error: any) {
+        // If student-specific endpoint doesn't exist, try general announcements endpoint
+        if (error.response?.status === 404) {
+          console.log("📢 Student-specific announcements endpoint not found, trying general announcements");
+          try {
+            const generalResponse = await api.get('/announcements');
+            return generalResponse.data;
+          } catch (generalError: any) {
+            // If both endpoints fail, return mock data for now
+            if (generalError.response?.status === 404) {
+              console.log("📢 No announcements endpoints available, returning sample data");
+              return [
+                {
+                  id: "sample-1",
+                  title: "Welcome to Limpopo Chefs Academy",
+                  content: "Welcome to your mobile app! This is a sample announcement. Real announcements will appear here once the server endpoints are configured.",
+                  date: new Date().toISOString().split('T')[0],
+                  priority: "medium" as const,
+                  read: false,
+                },
+                {
+                  id: "sample-2", 
+                  title: "System Setup in Progress",
+                  content: "The announcements system is being configured. You'll receive real announcements here soon!",
+                  date: new Date().toISOString().split('T')[0],
+                  priority: "low" as const,
+                  read: false,
+                }
+              ];
+            }
+            throw generalError;
+          }
+        }
+        throw error;
+      }
     });
   }
 
   static async markAnnouncementAsRead(announcementId: string): Promise<void> {
     return apiCallWithFailover(async (api) => {
-      await api.put(`/announcements/${announcementId}/read`);
+      try {
+        await api.put(`/announcements/${announcementId}/read`);
+      } catch (error: any) {
+        // If the endpoint doesn't exist, just log it and continue
+        if (error.response?.status === 404) {
+          console.log("📢 Mark as read endpoint not available yet");
+          return;
+        }
+        throw error;
+      }
+    });
+  }
+
+  // Mobile Notifications (based on the server endpoint you shared)
+  static async getMobileNotifications(page: number = 1, limit: number = 20): Promise<any> {
+    return apiCallWithFailover(async (api) => {
+      try {
+        const response = await api.get(`/mobile-notifications?page=${page}&limit=${limit}`);
+        return response.data;
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          console.log("📱 Mobile notifications endpoint not available yet");
+          return {
+            success: true,
+            data: {
+              notifications: [],
+              pagination: { page, limit, total: 0, pages: 0 }
+            }
+          };
+        }
+        throw error;
+      }
+    });
+  }
+
+  static async markMobileNotificationAsRead(notificationId: string, studentId: string): Promise<void> {
+    return apiCallWithFailover(async (api) => {
+      try {
+        await api.post(`/mobile-notifications/${notificationId}/read`, { studentId });
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          console.log("📱 Mark mobile notification as read endpoint not available yet");
+          return;
+        }
+        throw error;
+      }
     });
   }
 }

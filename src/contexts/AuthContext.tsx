@@ -43,68 +43,63 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuthStatus();
   }, []);
 
+  // Also check token validity periodically while app is active
+  useEffect(() => {
+    if (user) {
+      const interval = setInterval(async () => {
+        const isValid = await AuthService.checkTokenValidity();
+        if (!isValid) {
+          console.log("🔐 AuthContext: Token expired, logging out");
+          await logout();
+        }
+      }, 5 * 60 * 1000); // Check every 5 minutes
+
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
   const checkAuthStatus = async () => {
     try {
-      console.log("🔐 AuthContext: Starting auth check...");
+      console.log("🔐 AuthContext: Starting auto-login check...");
       setIsLoading(true);
-      const isAuth = await AuthService.isAuthenticated();
-      console.log("🔐 AuthContext: isAuthenticated result:", isAuth);
 
-      if (isAuth) {
+      // Use the new auto-login method
+      const userData = await AuthService.attemptAutoLogin();
+
+      if (userData) {
         console.log(
-          "✅ AuthContext: User is authenticated, getting user data..."
+          "✅ AuthContext: Auto-login successful for user:",
+          userData.id
         );
-        const userData = await AuthService.getUser();
-        console.log("✅ AuthContext: Local user data:", userData);
         setUser(userData);
 
-        // Try to refresh user data from server
+        // Load student profile data
         try {
-          const currentUser = await AuthService.getCurrentUser();
-          console.log("✅ AuthContext: Server user data:", currentUser);
-          if (currentUser) {
-            setUser(currentUser);
-
-            // Load student profile data
-            try {
-              const profileResponse = await StudentAPI.getStudentProfile(
-                currentUser.id
-              );
-              const profileData = (profileResponse as any)?.success
-                ? (profileResponse as any).data
-                : profileResponse;
-              setStudentProfile(profileData);
-              console.log(
-                "✅ AuthContext: Student profile loaded:",
-                profileData
-              );
-            } catch (profileError) {
-              console.log(
-                "⚠️ AuthContext: Failed to load student profile:",
-                profileError
-              );
-            }
-          }
-        } catch (serverError) {
-          console.log(
-            "⚠️ AuthContext: Server auth check failed, using local data:",
-            serverError
+          const profileResponse = await StudentAPI.getStudentProfile(
+            userData.id
           );
-          // Keep the local user data even if server check fails
+          const profileData = (profileResponse as any)?.success
+            ? (profileResponse as any).data
+            : profileResponse;
+          setStudentProfile(profileData);
+          console.log("✅ AuthContext: Student profile loaded:", profileData);
+        } catch (profileError) {
+          console.log(
+            "⚠️ AuthContext: Failed to load student profile:",
+            profileError
+          );
         }
       } else {
-        console.log("❌ AuthContext: User is not authenticated");
+        console.log("❌ AuthContext: Auto-login failed - user needs to login");
         setUser(null);
         setStudentProfile(null);
       }
     } catch (error) {
-      console.log("❌ AuthContext: Auth check error:", error);
-      // If there's an error, clear any stored auth data
-      await AuthService.logout();
+      console.log("❌ AuthContext: Auto-login error:", error);
       setUser(null);
       setStudentProfile(null);
     } finally {
-      console.log("🔐 AuthContext: Auth check completed, isLoading = false");
+      console.log("🔐 AuthContext: Auto-login check completed");
       setIsLoading(false);
     }
   };
