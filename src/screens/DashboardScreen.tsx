@@ -352,7 +352,7 @@ export default function DashboardScreen() {
     >
       {/* App Logo */}
       <View style={styles.logoContainer}>
-        <AppLogo size="medium" showText={true} />
+        <AppLogo size="medium" showText={false} />
       </View>
 
       {/* Welcome Card */}

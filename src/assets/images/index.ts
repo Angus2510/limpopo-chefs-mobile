@@ -13,9 +13,8 @@ export const images = {
 
   // Add your custom images here:
   // profilePlaceholder: require('./profile-placeholder.png'),
-  logo: require("./logo.png"), // Your app logo - add logo.png to src/assets/images/
-  // Temporary fallback to existing icon if logo.png doesn't exist yet:
-  // logo: require('../../../assets/icon.png'),
+  logo: require("../../../assets/logo-icon.png"), // Limpopo Chefs Academy logo
+  limpopoLogo: require("../../../assets/logo-icon.png"), // Alternative name for the same logo
   // yourImage: require('./your-image.png'),
 };
 

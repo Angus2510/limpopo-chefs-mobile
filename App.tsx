@@ -1,10 +1,22 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { Provider as PaperProvider, MD3LightTheme } from "react-native-paper";
 import { StatusBar } from "expo-status-bar";
+import * as Notifications from "expo-notifications";
 import { AuthProvider } from "./src/contexts/AuthContext";
+import {
+  NotificationBadgeProvider,
+  useNotificationBadge,
+} from "./src/contexts/NotificationBadgeContext";
 import AppNavigator from "./src/navigation/AppNavigator";
 import { View, Text, StyleSheet } from "react-native";
+import {
+  registerForPushNotificationsAsync,
+  addNotificationListener,
+  addNotificationResponseListener,
+  handleNotificationTap,
+} from "./src/services/pushNotifications";
+import { APP_CONFIG } from "./src/config";
 
 // Force Light Theme for React Native Paper
 const lightTheme = {
@@ -72,19 +84,89 @@ class ErrorBoundary extends React.Component<
   }
 }
 
+// Main App component with push notification setup
+function AppWithNotifications() {
+  const notificationListener = useRef<Notifications.Subscription | null>(null);
+  const responseListener = useRef<Notifications.Subscription | null>(null);
+  const navigationRef = useRef<any>(null);
+  const { incrementUnread, refreshUnreadCount } = useNotificationBadge();
+
+  useEffect(() => {
+    // Setup push notifications if enabled (disabled in Expo Go)
+    setupPushNotifications();
+
+    return () => {
+      // Cleanup notification listeners
+      if (notificationListener.current) {
+        notificationListener.current.remove();
+      }
+      if (responseListener.current) {
+        responseListener.current.remove();
+      }
+    };
+  }, []);
+
+  const setupPushNotifications = async () => {
+    try {
+      // Check if push notifications are enabled (disabled in Expo Go)
+      if (!APP_CONFIG.FEATURES.ENABLE_PUSH_NOTIFICATIONS) {
+        console.log(
+          "📱 Push notifications disabled in Expo Go - using notification polling instead"
+        );
+        return;
+      }
+
+      // Register for push notifications
+      const studentId = APP_CONFIG.DEFAULT_STUDENT_ID; // Replace with actual student ID from auth
+      await registerForPushNotificationsAsync(studentId);
+
+      // Listen for notifications when app is running
+      notificationListener.current = addNotificationListener((notification) => {
+        console.log("🔔 Notification received while app active:", notification);
+        // Increment unread count when notification is received
+        incrementUnread();
+      });
+
+      // Listen for user tapping on notifications
+      responseListener.current = addNotificationResponseListener((response) => {
+        console.log("🔔 Notification tapped:", response);
+        handleNotificationTap(response.notification, navigationRef.current);
+        // Refresh unread count after user interacts with notification
+        setTimeout(() => refreshUnreadCount(), 1000);
+      });
+
+      console.log("✅ Push notifications setup complete");
+    } catch (error) {
+      console.error("❌ Error setting up push notifications:", error);
+      // Don't crash the app if push notifications fail
+    }
+  };
+
+  return (
+    <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+      <AppNavigator />
+      <StatusBar style="dark" backgroundColor="#ffffff" />
+    </NavigationContainer>
+  );
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
       <PaperProvider theme={lightTheme}>
         <AuthProvider>
-          <NavigationContainer theme={navigationTheme}>
-            <AppNavigator />
-            <StatusBar style="dark" backgroundColor="#ffffff" />
-          </NavigationContainer>
+          <NotificationBadgeProvider>
+            <AppWithNotificationsWrapper />
+          </NotificationBadgeProvider>
         </AuthProvider>
       </PaperProvider>
     </ErrorBoundary>
   );
+}
+
+// Wrapper component to use notification badge context
+function AppWithNotificationsWrapper() {
+  return <AppWithNotifications />;
 }
 
 const styles = StyleSheet.create({

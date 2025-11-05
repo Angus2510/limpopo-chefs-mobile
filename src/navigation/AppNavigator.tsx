@@ -13,6 +13,8 @@ import {
   Alert,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotificationBadge } from "../contexts/NotificationBadgeContext";
+import NotificationBadge from "../components/NotificationBadge";
 import LoadingScreen from "../components/LoadingScreen";
 
 // Import screens
@@ -29,10 +31,12 @@ import WELScreen from "../screens/WELScreen";
 import WELLocationsScreen from "../screens/WELLocationsScreen";
 import WeeklyCalendarScreen from "../screens/WeeklyCalendarScreen";
 import AnnouncementsScreen from "../screens/AnnouncementsScreen";
+import NotificationsScreen from "../screens/NotificationsScreen";
 
 // More Home Screen component
 function MoreHomeScreen({ navigation }: any) {
   const { logout } = useAuth();
+  const { unreadCount } = useNotificationBadge();
   console.log("MoreHomeScreen rendered"); // Debug log
 
   const handleLogout = () => {
@@ -108,6 +112,40 @@ function MoreHomeScreen({ navigation }: any) {
           <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
             📢 Announcements
           </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: "white",
+            padding: 15,
+            borderRadius: 8,
+            marginBottom: 10,
+            elevation: 2,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.2,
+            shadowRadius: 2,
+          }}
+          onPress={() => navigation.navigate("Notifications")}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
+              🔔 Notifications
+            </Text>
+            {unreadCount > 0 && (
+              <NotificationBadge
+                count={unreadCount}
+                size="small"
+                position="inline"
+              />
+            )}
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -209,7 +247,7 @@ function MoreHomeScreen({ navigation }: any) {
         <TouchableOpacity
           style={{
             backgroundColor: "#f44336",
-            padding: 20,
+            padding: 16,
             borderRadius: 8,
             marginTop: 20,
             marginBottom: 10,
@@ -222,7 +260,7 @@ function MoreHomeScreen({ navigation }: any) {
           }}
           onPress={handleLogout}
         >
-          <Text style={{ fontSize: 18, fontWeight: "bold", color: "white" }}>
+          <Text style={{ fontSize: 14, fontWeight: "bold", color: "white" }}>
             🚪 Logout
           </Text>
         </TouchableOpacity>
@@ -238,6 +276,9 @@ export type RootStackParamList = {
   ViewAttendance: undefined;
   WeeklyCalendar: undefined;
   WELLocations: undefined;
+  Notifications:
+    | { notificationId?: string; highlightNotification?: boolean }
+    | undefined;
 };
 
 export type BottomTabParamList = {
@@ -252,6 +293,7 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 function MoreStackNavigator() {
   const MoreStack = createStackNavigator();
+  const { unreadCount } = useNotificationBadge();
 
   return (
     <MoreStack.Navigator>
@@ -269,6 +311,23 @@ function MoreStackNavigator() {
         name="Announcements"
         component={AnnouncementsScreen}
         options={{ title: "Announcements" }}
+      />
+      <MoreStack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{
+          title: "Notifications",
+          headerRight: () =>
+            unreadCount > 0 ? (
+              <View style={{ marginRight: 16 }}>
+                <NotificationBadge
+                  count={unreadCount}
+                  size="small"
+                  position="inline"
+                />
+              </View>
+            ) : null,
+        }}
       />
       <MoreStack.Screen
         name="Fees"
@@ -300,6 +359,8 @@ function MoreStackNavigator() {
 }
 
 function MoreTabsScreen() {
+  const { unreadCount } = useNotificationBadge();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -320,7 +381,20 @@ function MoreTabsScreen() {
             iconName = "help-circle";
           }
 
-          return <Ionicons name={iconName} size={size} color={color} />;
+          const IconComponent = () => (
+            <View style={{ position: "relative" }}>
+              <Ionicons name={iconName} size={size} color={color} />
+              {route.name === "More" && unreadCount > 0 && (
+                <NotificationBadge
+                  count={unreadCount}
+                  size="small"
+                  position="top-right"
+                />
+              )}
+            </View>
+          );
+
+          return <IconComponent />;
         },
         tabBarActiveTintColor: "#2196F3",
         tabBarInactiveTintColor: "gray",

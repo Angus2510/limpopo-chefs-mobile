@@ -618,31 +618,37 @@ export class StudentAPI {
       } catch (error: any) {
         // If student-specific endpoint doesn't exist, try general announcements endpoint
         if (error.response?.status === 404) {
-          console.log("📢 Student-specific announcements endpoint not found, trying general announcements");
+          console.log(
+            "📢 Student-specific announcements endpoint not found, trying general announcements"
+          );
           try {
-            const generalResponse = await api.get('/announcements');
+            const generalResponse = await api.get("/announcements");
             return generalResponse.data;
           } catch (generalError: any) {
             // If both endpoints fail, return mock data for now
             if (generalError.response?.status === 404) {
-              console.log("📢 No announcements endpoints available, returning sample data");
+              console.log(
+                "📢 No announcements endpoints available, returning sample data"
+              );
               return [
                 {
                   id: "sample-1",
                   title: "Welcome to Limpopo Chefs Academy",
-                  content: "Welcome to your mobile app! This is a sample announcement. Real announcements will appear here once the server endpoints are configured.",
-                  date: new Date().toISOString().split('T')[0],
+                  content:
+                    "Welcome to your mobile app! This is a sample announcement. Real announcements will appear here once the server endpoints are configured.",
+                  date: new Date().toISOString().split("T")[0],
                   priority: "medium" as const,
                   read: false,
                 },
                 {
-                  id: "sample-2", 
+                  id: "sample-2",
                   title: "System Setup in Progress",
-                  content: "The announcements system is being configured. You'll receive real announcements here soon!",
-                  date: new Date().toISOString().split('T')[0],
+                  content:
+                    "The announcements system is being configured. You'll receive real announcements here soon!",
+                  date: new Date().toISOString().split("T")[0],
                   priority: "low" as const,
                   read: false,
-                }
+                },
               ];
             }
             throw generalError;
@@ -668,11 +674,17 @@ export class StudentAPI {
     });
   }
 
-  // Mobile Notifications (based on the server endpoint you shared)
-  static async getMobileNotifications(page: number = 1, limit: number = 20): Promise<any> {
+  // Mobile Notifications
+  static async getMobileNotifications(
+    studentId: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<any> {
     return apiCallWithFailover(async (api) => {
       try {
-        const response = await api.get(`/mobile-notifications?page=${page}&limit=${limit}`);
+        const response = await api.get(
+          `/students/${studentId}/notifications?page=${page}&limit=${limit}`
+        );
         return response.data;
       } catch (error: any) {
         if (error.response?.status === 404) {
@@ -681,8 +693,8 @@ export class StudentAPI {
             success: true,
             data: {
               notifications: [],
-              pagination: { page, limit, total: 0, pages: 0 }
-            }
+              pagination: { page, limit, total: 0, pages: 0 },
+            },
           };
         }
         throw error;
@@ -690,14 +702,41 @@ export class StudentAPI {
     });
   }
 
-  static async markMobileNotificationAsRead(notificationId: string, studentId: string): Promise<void> {
+  static async markMobileNotificationAsRead(
+    studentId: string,
+    notificationId: string
+  ): Promise<void> {
     return apiCallWithFailover(async (api) => {
       try {
-        await api.post(`/mobile-notifications/${notificationId}/read`, { studentId });
+        await api.patch(`/students/${studentId}/notifications`, {
+          notificationId,
+        });
       } catch (error: any) {
         if (error.response?.status === 404) {
-          console.log("📱 Mark mobile notification as read endpoint not available yet");
+          console.log(
+            "📱 Mark mobile notification as read endpoint not available yet"
+          );
           return;
+        }
+        throw error;
+      }
+    });
+  }
+
+  static async registerPushToken(
+    studentId: string,
+    pushToken: string
+  ): Promise<any> {
+    return apiCallWithFailover(async (api) => {
+      try {
+        const response = await api.post(`/students/${studentId}/push-token`, {
+          pushToken,
+        });
+        return response.data;
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          console.log("📱 Push token registration endpoint not available yet");
+          return { success: false, error: "Endpoint not available" };
         }
         throw error;
       }

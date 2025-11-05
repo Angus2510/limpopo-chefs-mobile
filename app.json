@@ -1,30 +1,56 @@
 {
   "expo": {
-    "name": "limpopo-chefs-mobile",
+    "name": "Limpopo Chefs Academy",
     "slug": "limpopo-chefs-mobile",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "assets/icon.png",
+    "icon": "assets/IconKitchen-Output/ios/AppIcon~ios-marketing.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
     "splash": {
-      "image": "assets/splash-icon.png",
+      "image": "assets/logo-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.limpopoChefs.mobile",
-      "userInterfaceStyle": "light"
+      "userInterfaceStyle": "light",
+      "buildNumber": "3",
+      "requireFullScreen": false,
+      "teamId": "YU3WA8Z4R7",
+      "infoPlist": {
+        "CFBundleDisplayName": "Limpopo Chefs Academy",
+        "NSCameraUsageDescription": "This app uses the camera to scan QR codes for attendance tracking.",
+        "NSLocationWhenInUseUsageDescription": "This app uses location services to verify attendance location.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSExceptionDomains": {
+            "portal.limpopochefs.co.za": {
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionMinimumTLSVersion": "1.0",
+              "NSExceptionRequiresForwardSecrecy": false
+            }
+          }
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "assets/adaptive-icon.png",
+        "foregroundImage": "assets/IconKitchen-Output/android/play_store_512.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.limpopoChefs.mobile",
-      "versionCode": 2,
-      "userInterfaceStyle": "light"
+      "versionCode": 4,
+      "userInterfaceStyle": "light",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.INTERNET"
+      ],
+      "usesCleartextTraffic": false,
+      "networkSecurityConfig": "network_security_config"
     },
     "web": {
       "favicon": "assets/favicon.png"

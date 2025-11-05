@@ -1,23 +1,31 @@
+import { Platform } from "react-native";
+import Constants from "expo-constants";
+
 // Configuration file for the mobile app
 
 // FORCE CONSISTENT BEHAVIOR: Always use the same settings
 // This ensures Expo Go and standalone apps work identically
 const FORCE_PRODUCTION_MODE = true;
 
+// Check if running in Expo Go (which doesn't support push notifications in SDK 53+)
+const isExpoGo = Constants.appOwnership === "expo";
+
 console.log("🔧 App Environment:", {
   forcedMode: "ALWAYS_PRODUCTION",
   reason: "Ensuring consistent behavior between Expo Go and standalone",
+  isExpoGo: isExpoGo,
+  pushNotificationsSupported: !isExpoGo,
 });
 
 export const API_CONFIG = {
-  // ALWAYS use the same API endpoints regardless of environment
+  // PRODUCTION: Using actual server endpoints
   PORTAL_BASE_URL: "https://portal.limpopochefs.co.za/api/mobile",
-  VERCEL_BASE_URL: "https://limpopo-chefs-backend.vercel.app/api/mobile",
+  VERCEL_BASE_URL: "https://portal.limpopochefs.co.za/api/mobile",
 
-  // DEVELOPMENT: Using local IP address for testing with Expo Go
-  BASE_URL: "http://192.168.101.148:3000/api/mobile",
+  // PRIMARY: Production server (portal)
+  BASE_URL: "https://portal.limpopochefs.co.za/api/mobile",
 
-  // Fallback URL if primary fails
+  // Fallback URL if primary fails (same as primary for now)
   FALLBACK_URL: "https://portal.limpopochefs.co.za/api/mobile",
 
   // FIXED: Same timeout for all environments
@@ -33,6 +41,45 @@ console.log("🌐 API Configuration:", {
   fallbackURL: API_CONFIG.FALLBACK_URL,
   timeout: API_CONFIG.TIMEOUT,
 });
+
+// Network connectivity test function
+export const testNetworkConnectivity = async () => {
+  try {
+    console.log("🔍 Testing network connectivity to:", API_CONFIG.BASE_URL);
+
+    const response = await fetch(`${API_CONFIG.BASE_URL}/health`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-cache",
+    });
+
+    console.log("✅ Network test response:", {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url,
+    });
+
+    return {
+      success: true,
+      status: response.status,
+      statusText: response.statusText,
+    };
+  } catch (error: any) {
+    console.error("❌ Network connectivity test failed:", {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+    });
+
+    return {
+      success: false,
+      error: error.message,
+      name: error.name,
+    };
+  }
+};
 
 export const APP_CONFIG = {
   // App-wide settings
@@ -53,7 +100,7 @@ export const APP_CONFIG = {
   FEATURES: {
     ENABLE_QR_SCANNING: true,
     ENABLE_FILE_DOWNLOADS: true,
-    ENABLE_PUSH_NOTIFICATIONS: false,
+    ENABLE_PUSH_NOTIFICATIONS: !isExpoGo, // Disable push notifications in Expo Go
   },
 };
 

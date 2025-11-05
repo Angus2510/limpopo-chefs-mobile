@@ -6,6 +6,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Image,
 } from "react-native";
 import {
   Card,
@@ -15,8 +16,8 @@ import {
   Text,
   ActivityIndicator,
 } from "react-native-paper";
-import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../contexts/AuthContext";
+import { images } from "../assets/images";
 
 export default function LoginScreen() {
   const [identifier, setIdentifier] = useState("");
@@ -61,9 +62,11 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.logoContainer}>
-          <Ionicons name="school" size={80} color="#2196F3" />
-          <Title style={styles.logoText}>Limpopo Chefs Academy</Title>
-          <Text style={styles.subtitle}>Student Portal</Text>
+          <Image
+            source={images.logo}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
 
         <Card style={styles.loginCard}>
@@ -152,17 +155,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 40,
   },
-  logoText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2196F3",
-    marginTop: 16,
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginTop: 8,
+  logo: {
+    width: 200,
+    height: 120,
+    marginBottom: 20,
   },
   loginCard: {
     elevation: 8,

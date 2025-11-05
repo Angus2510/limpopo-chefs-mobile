@@ -44,21 +44,41 @@ export class AuthService {
   // Login
   static async login(credentials: LoginCredentials): Promise<LoginResponse> {
     try {
+      console.log("🔍 Starting login process...");
+      console.log("🔍 API Base URL:", authApi.defaults.baseURL);
       console.log(
-        "🔍 Making login request to:",
+        "🔍 Full login URL:",
         authApi.defaults.baseURL + "/auth/login"
       );
-      console.log("🔍 With credentials:", {
+      console.log("🔍 Credentials:", {
         identifier: credentials.identifier,
         password: "[HIDDEN]",
       });
+      console.log("🔍 Request headers:", authApi.defaults.headers);
 
+      // Test basic connectivity first
+      console.log("🌐 Testing basic connectivity...");
+      try {
+        const testResponse = await fetch(authApi.defaults.baseURL + "/health", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+        console.log("✅ Connectivity test result:", {
+          status: testResponse.status,
+          statusText: testResponse.statusText,
+        });
+      } catch (connectError: any) {
+        console.error("❌ Basic connectivity failed:", connectError.message);
+      }
+
+      console.log("📤 Making actual login request...");
       const response = await authApi.post("/auth/login", credentials);
-      console.log("✅ Login response status:", response.status);
-      console.log(
-        "✅ Login response data:",
-        JSON.stringify(response.data, null, 2)
-      );
+
+      console.log("✅ Login response received:");
+      console.log("   Status:", response.status);
+      console.log("   Status Text:", response.statusText);
+      console.log("   Headers:", response.headers);
+      console.log("   Data:", JSON.stringify(response.data, null, 2));
 
       const { accessToken, user } = response.data;
 
@@ -70,19 +90,53 @@ export class AuthService {
 
       return response.data;
     } catch (error: any) {
-      console.error("❌ Login error details:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-        url: error.config?.url,
-        method: error.config?.method,
+      console.error("❌ Login error - FULL DETAILS:");
+      console.error("   Error Type:", error.name || "Unknown");
+      console.error("   Error Message:", error.message || "No message");
+      console.error("   Network Error:", error.code || "No code");
+      console.error("   Request Config:", {
+        url: error.config?.url || "No URL",
+        method: error.config?.method || "No method",
+        baseURL: error.config?.baseURL || "No baseURL",
+        timeout: error.config?.timeout || "No timeout",
+        headers: error.config?.headers || "No headers",
       });
-      throw new Error(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Login failed"
-      );
+
+      if (error.response) {
+        console.error("   Response Status:", error.response.status);
+        console.error("   Response Status Text:", error.response.statusText);
+        console.error("   Response Headers:", error.response.headers);
+        console.error("   Response Data:", error.response.data);
+      } else if (error.request) {
+        console.error("   Request Made But No Response:", error.request);
+      } else {
+        console.error("   Error Setting Up Request:", error.message);
+      }
+
+      // Provide more specific error messages
+      let errorMessage = "Login failed";
+      if (
+        error.code === "NETWORK_ERROR" ||
+        error.message.includes("Network Error")
+      ) {
+        errorMessage =
+          "Network connection failed. Please check your internet connection and try again.";
+      } else if (
+        error.code === "ENOTFOUND" ||
+        error.message.includes("ENOTFOUND")
+      ) {
+        errorMessage = "Cannot reach the server. Please try again later.";
+      } else if (error.response?.status === 401) {
+        errorMessage = "Invalid username or password. Please try again.";
+      } else if (error.response?.status === 500) {
+        errorMessage = "Server error. Please try again later.";
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+
+      throw new Error(errorMessage);
     }
   }
 
