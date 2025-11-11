@@ -80,13 +80,13 @@ export default function AnnouncementsScreen() {
         console.warn("⚠️ Announcements is not an array:", typeof announcements);
         setAnnouncements([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("📢 Error fetching announcements:", error);
       console.error("📢 Error details:", {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
+        message: error?.message,
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
       });
       setAnnouncements([]);
       Alert.alert("Error", "Failed to load announcements");
@@ -117,7 +117,7 @@ export default function AnnouncementsScreen() {
       );
 
       console.log("✅ Marked announcement as read:", announcementId);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error marking announcement as read:", error);
       Alert.alert("Error", "Failed to mark announcement as read");
     } finally {
@@ -159,7 +159,7 @@ export default function AnnouncementsScreen() {
               );
 
               console.log("✅ Marked all announcements as read");
-            } catch (error) {
+            } catch (error: any) {
               console.error("Error marking all announcements as read:", error);
               Alert.alert("Error", "Failed to mark all announcements as read");
             }
