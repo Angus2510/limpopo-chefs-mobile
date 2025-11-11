@@ -2,7 +2,7 @@
   "expo": {
     "name": "Limpopo Chefs Academy",
     "slug": "limpopo-chefs-mobile",
-    "version": "1.0.4",
+    "version": "1.0.6",
     "description": "The official mobile app for Limpopo Chefs Academy students. Access your academic information, track progress, view announcements, manage attendance, and stay connected with your culinary education journey.",
     "orientation": "portrait",
     "icon": "assets/IconKitchen-Output/ios/AppIcon~ios-marketing.png",
@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.limpopoChefs.mobile",
       "userInterfaceStyle": "light",
-      "buildNumber": "6",
+      "buildNumber": "8",
       "requireFullScreen": false,
       "teamId": "YU3WA8Z4R7",
       "infoPlist": {
@@ -42,7 +42,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.limpopoChefs.mobile",
-      "versionCode": 7,
+      "versionCode": 9,
       "userInterfaceStyle": "light",
       "permissions": [
         "android.permission.CAMERA",

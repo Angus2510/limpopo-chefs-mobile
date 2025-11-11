@@ -35,17 +35,25 @@ export default function AnnouncementsScreen() {
   }, [user?.id, isAuthenticated]);
 
   const loadAnnouncements = async () => {
-    if (!isAuthenticated || !user?.id) return;
+    if (!isAuthenticated || !user?.id) {
+      console.log("📢 Cannot load announcements - not authenticated or no user ID");
+      console.log("📢 Auth state:", { isAuthenticated, userId: user?.id });
+      return;
+    }
 
     try {
       setLoading(true);
       console.log("📢 Loading announcements for user:", user.id);
+      console.log("📢 User object:", user);
 
       const announcements = await StudentAPI.getAnnouncements(user.id);
 
+      console.log("📢 Raw announcements response:", announcements);
       console.log("📢 Announcements loaded:", {
         count: announcements?.length || 0,
         unreadCount: announcements?.filter((a) => !a.read).length || 0,
+        isArray: Array.isArray(announcements),
+        firstItem: announcements?.[0] || 'none',
       });
 
       // Ensure announcements is always an array
@@ -71,7 +79,13 @@ export default function AnnouncementsScreen() {
         setAnnouncements([]);
       }
     } catch (error) {
-      console.error("Error fetching announcements:", error);
+      console.error("📢 Error fetching announcements:", error);
+      console.error("📢 Error details:", {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+      });
       setAnnouncements([]);
       Alert.alert("Error", "Failed to load announcements");
     } finally {

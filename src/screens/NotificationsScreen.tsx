@@ -12,6 +12,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import StudentAPI from "../services/api";
 import { useNotificationBadge } from "../contexts/NotificationBadgeContext";
+import { useAuth } from "../contexts/AuthContext";
 import { APP_CONFIG } from "../config";
 
 interface MobileNotification {
@@ -47,9 +48,10 @@ export default function NotificationsScreen({
 
   const { markAsRead: updateBadgeCount, refreshUnreadCount } =
     useNotificationBadge();
+  const { user, isAuthenticated } = useAuth();
 
-  // Mock student ID - replace with actual auth context
-  const studentId = APP_CONFIG.DEFAULT_STUDENT_ID;
+  // Get actual student ID from authenticated user
+  const studentId = user?.id;
 
   useFocusEffect(
     useCallback(() => {
@@ -71,9 +73,18 @@ export default function NotificationsScreen({
   );
 
   const fetchNotifications = async (reset = false) => {
+    if (!isAuthenticated || !studentId) {
+      console.log("❌ NotificationsScreen: No authenticated user");
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
     try {
       const currentPage = reset ? 1 : page;
       setLoading(reset);
+
+      console.log(`📱 NotificationsScreen: Fetching notifications for user ${studentId}, page ${currentPage}`);
 
       const response = await StudentAPI.getMobileNotifications(
         studentId,
@@ -81,8 +92,12 @@ export default function NotificationsScreen({
         20
       );
 
+      console.log(`📱 NotificationsScreen: Response received:`, JSON.stringify(response, null, 2));
+
       if (response.success && response.data) {
         const newNotifications = response.data.notifications || [];
+
+        console.log(`📱 NotificationsScreen: Found ${newNotifications.length} notifications`);
 
         if (reset) {
           setNotifications(newNotifications);
@@ -95,10 +110,13 @@ export default function NotificationsScreen({
         // Check if there are more pages
         const pagination = response.data.pagination;
         setHasMore(pagination ? currentPage < pagination.pages : false);
+      } else {
+        console.log("❌ NotificationsScreen: Invalid response structure:", response);
+        Alert.alert("Error", "Invalid response format from server");
       }
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-      Alert.alert("Error", "Failed to fetch notifications. Please try again.");
+    } catch (error: any) {
+      console.error("❌ NotificationsScreen: Error fetching notifications:", error);
+      Alert.alert("Error", `Failed to fetch notifications: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -113,6 +131,11 @@ export default function NotificationsScreen({
   };
 
   const markAsRead = async (notificationId: string) => {
+    if (!studentId) {
+      console.log("❌ NotificationsScreen: No student ID for marking as read");
+      return;
+    }
+
     try {
       await StudentAPI.markMobileNotificationAsRead(studentId, notificationId);
 
@@ -223,6 +246,17 @@ export default function NotificationsScreen({
       </Text>
     </View>
   );
+
+  if (!isAuthenticated || !studentId) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyTitle}>Please log in</Text>
+        <Text style={styles.emptyText}>
+          You need to be logged in to view notifications.
+        </Text>
+      </View>
+    );
+  }
 
   if (loading && page === 1) {
     return (
