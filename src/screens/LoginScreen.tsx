@@ -6,7 +6,6 @@ import {
   Platform,
   ScrollView,
   Alert,
-  Image,
 } from "react-native";
 import {
   Card,
@@ -17,7 +16,7 @@ import {
   ActivityIndicator,
 } from "react-native-paper";
 import { useAuth } from "../contexts/AuthContext";
-import { images } from "../assets/images";
+import AppLogo from "../components/AppLogo";
 
 export default function LoginScreen() {
   const [identifier, setIdentifier] = useState("");
@@ -62,11 +61,7 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.logoContainer}>
-          <Image
-            source={images.logo}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <AppLogo size="large" showText={true} />
         </View>
 
         <Card style={styles.loginCard}>
@@ -154,11 +149,6 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: "center",
     marginBottom: 40,
-  },
-  logo: {
-    width: 200,
-    height: 120,
-    marginBottom: 20,
   },
   loginCard: {
     elevation: 8,

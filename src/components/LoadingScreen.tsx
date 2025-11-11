@@ -17,9 +17,6 @@ export default function LoadingScreen({
           <AppLogo size="large" />
         </View>
 
-        {/* Loading text */}
-        <Text style={styles.title}>Limpopo Chefs Academy</Text>
-
         {/* Loading indicator */}
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2196F3" />
@@ -48,13 +45,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   logoContainer: {
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2196F3",
-    textAlign: "center",
     marginBottom: 40,
   },
   loadingContainer: {

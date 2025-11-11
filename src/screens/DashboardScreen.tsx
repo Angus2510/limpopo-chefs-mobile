@@ -352,7 +352,7 @@ export default function DashboardScreen() {
     >
       {/* App Logo */}
       <View style={styles.logoContainer}>
-        <AppLogo size="medium" showText={false} />
+        <AppLogo size="medium" showText={true} />
       </View>
 
       {/* Welcome Card */}
@@ -510,11 +510,21 @@ export default function DashboardScreen() {
         <Card.Content>
           <Title>Quick Actions</Title>
           <View style={styles.quickActions}>
-            <TouchableOpacity style={styles.quickAction}>
+            <TouchableOpacity
+              style={styles.quickAction}
+              onPress={() =>
+                navigation.navigate("More" as any, { screen: "Downloads" })
+              }
+            >
               <Ionicons name="download-outline" size={32} color="#2196F3" />
               <Text style={styles.quickActionText}>Downloads</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.quickAction}>
+            <TouchableOpacity
+              style={styles.quickAction}
+              onPress={() =>
+                navigation.navigate("More" as any, { screen: "Profile" })
+              }
+            >
               <Ionicons name="person-outline" size={32} color="#2196F3" />
               <Text style={styles.quickActionText}>Profile</Text>
             </TouchableOpacity>

@@ -20,6 +20,7 @@ import {
   Chip,
 } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import StudentAPI from "../services/api";
 import { Student } from "../types";
 import { useAuth } from "../contexts/AuthContext";
@@ -56,6 +57,7 @@ interface StudentProfile {
 }
 
 export default function ProfileScreen() {
+  const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("overview");
   const [documents, setDocuments] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
@@ -615,82 +617,121 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
-      }
-    >
-      {renderStudentHeader()}
+    <View style={styles.screenContainer}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+      </View>
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+        }
+      >
+        {renderStudentHeader()}
 
-      {/* Tabs */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === "overview" && styles.activeTab]}
-              onPress={() => handleTabChange("overview")}
-            >
-              <Text
+        {/* Tabs */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <View style={styles.tabContainer}>
+              <TouchableOpacity
                 style={[
-                  styles.tabText,
-                  activeTab === "overview" && styles.activeTabText,
+                  styles.tab,
+                  activeTab === "overview" && styles.activeTab,
                 ]}
+                onPress={() => handleTabChange("overview")}
               >
-                Overview
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.tab,
-                activeTab === "documents" && styles.activeTab,
-              ]}
-              onPress={() => handleTabChange("documents")}
-            >
-              <Text
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "overview" && styles.activeTabText,
+                  ]}
+                >
+                  Overview
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[
-                  styles.tabText,
-                  activeTab === "documents" && styles.activeTabText,
+                  styles.tab,
+                  activeTab === "documents" && styles.activeTab,
                 ]}
+                onPress={() => handleTabChange("documents")}
               >
-                Documents
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === "results" && styles.activeTab]}
-              onPress={() => handleTabChange("results")}
-            >
-              <Text
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "documents" && styles.activeTabText,
+                  ]}
+                >
+                  Documents
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[
-                  styles.tabText,
-                  activeTab === "results" && styles.activeTabText,
+                  styles.tab,
+                  activeTab === "results" && styles.activeTab,
                 ]}
+                onPress={() => handleTabChange("results")}
               >
-                Results
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === "finance" && styles.activeTab]}
-              onPress={() => handleTabChange("finance")}
-            >
-              <Text
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "results" && styles.activeTabText,
+                  ]}
+                >
+                  Results
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[
-                  styles.tabText,
-                  activeTab === "finance" && styles.activeTabText,
+                  styles.tab,
+                  activeTab === "finance" && styles.activeTab,
                 ]}
+                onPress={() => handleTabChange("finance")}
               >
-                Finance
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.tabContent}>{renderTabContent()}</View>
-        </Card.Content>
-      </Card>
-    </ScrollView>
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "finance" && styles.activeTabText,
+                  ]}
+                >
+                  Finance
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.tabContent}>{renderTabContent()}</View>
+          </Card.Content>
+        </Card>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 5,
+    backgroundColor: "#f5f5f5",
+  },
+  backButton: {
+    padding: 10,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: "#2196F3",
+    fontWeight: "500",
+  },
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",

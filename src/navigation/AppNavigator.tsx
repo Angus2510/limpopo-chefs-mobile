@@ -404,7 +404,18 @@ function MoreTabsScreen() {
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
 
       <Tab.Screen name="Attendance" component={AttendanceTabNavigator} />
-      <Tab.Screen name="More" component={MoreStackNavigator} />
+      <Tab.Screen 
+        name="More" 
+        component={MoreStackNavigator}
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            // Always navigate to MoreHome when the tab is pressed
+            (navigation as any).navigate('More', {
+              screen: 'MoreHome'
+            });
+          },
+        })}
+      />
     </Tab.Navigator>
   );
 }

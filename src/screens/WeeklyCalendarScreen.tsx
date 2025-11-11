@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Card, Title, Button } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import {
   format,
   startOfWeek,
@@ -43,6 +44,7 @@ const EVENT_TYPES: Record<string, string> = {
 };
 
 export default function WeeklyCalendarScreen() {
+  const navigation = useNavigation();
   const { user, isAuthenticated } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<Event[]>([]);
@@ -321,6 +323,17 @@ export default function WeeklyCalendarScreen() {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Back Button */}
+      <View style={styles.backButtonContainer}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#2196F3" />
+          <Text style={styles.backButtonText}>Back</Text>
+        </TouchableOpacity>
+      </View>
+
       <Card style={styles.headerCard}>
         <Card.Content>
           <View style={styles.headerContent}>
@@ -499,5 +512,20 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 14,
     color: "#999",
+  },
+  backButtonContainer: {
+    padding: 16,
+    paddingBottom: 0,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  backButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: "#2196F3",
+    fontWeight: "500",
   },
 });
