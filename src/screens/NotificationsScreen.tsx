@@ -84,7 +84,9 @@ export default function NotificationsScreen({
       const currentPage = reset ? 1 : page;
       setLoading(reset);
 
-      console.log(`📱 NotificationsScreen: Fetching notifications for user ${studentId}, page ${currentPage}`);
+      console.log(
+        `📱 NotificationsScreen: Fetching notifications for user ${studentId}, page ${currentPage}`
+      );
 
       const response = await StudentAPI.getMobileNotifications(
         studentId,
@@ -92,12 +94,17 @@ export default function NotificationsScreen({
         20
       );
 
-      console.log(`📱 NotificationsScreen: Response received:`, JSON.stringify(response, null, 2));
+      console.log(
+        `📱 NotificationsScreen: Response received:`,
+        JSON.stringify(response, null, 2)
+      );
 
       if (response.success && response.data) {
         const newNotifications = response.data.notifications || [];
 
-        console.log(`📱 NotificationsScreen: Found ${newNotifications.length} notifications`);
+        console.log(
+          `📱 NotificationsScreen: Found ${newNotifications.length} notifications`
+        );
 
         if (reset) {
           setNotifications(newNotifications);
@@ -111,12 +118,21 @@ export default function NotificationsScreen({
         const pagination = response.data.pagination;
         setHasMore(pagination ? currentPage < pagination.pages : false);
       } else {
-        console.log("❌ NotificationsScreen: Invalid response structure:", response);
+        console.log(
+          "❌ NotificationsScreen: Invalid response structure:",
+          response
+        );
         Alert.alert("Error", "Invalid response format from server");
       }
     } catch (error: any) {
-      console.error("❌ NotificationsScreen: Error fetching notifications:", error);
-      Alert.alert("Error", `Failed to fetch notifications: ${error.message || 'Unknown error'}`);
+      console.error(
+        "❌ NotificationsScreen: Error fetching notifications:",
+        error
+      );
+      Alert.alert(
+        "Error",
+        `Failed to fetch notifications: ${error.message || "Unknown error"}`
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);

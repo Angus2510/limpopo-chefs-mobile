@@ -36,7 +36,9 @@ export default function AnnouncementsScreen() {
 
   const loadAnnouncements = async () => {
     if (!isAuthenticated || !user?.id) {
-      console.log("📢 Cannot load announcements - not authenticated or no user ID");
+      console.log(
+        "📢 Cannot load announcements - not authenticated or no user ID"
+      );
       console.log("📢 Auth state:", { isAuthenticated, userId: user?.id });
       return;
     }
@@ -53,7 +55,7 @@ export default function AnnouncementsScreen() {
         count: announcements?.length || 0,
         unreadCount: announcements?.filter((a) => !a.read).length || 0,
         isArray: Array.isArray(announcements),
-        firstItem: announcements?.[0] || 'none',
+        firstItem: announcements?.[0] || "none",
       });
 
       // Ensure announcements is always an array
