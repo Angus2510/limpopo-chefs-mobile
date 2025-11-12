@@ -152,7 +152,15 @@ export default function NotificationsScreen({
       return;
     }
 
+    // Check if notification is already read
+    const notification = notifications.find((n) => n.id === notificationId);
+    if (notification?.isRead) {
+      console.log("📖 Notification already marked as read:", notificationId);
+      return;
+    }
+
     try {
+      console.log("📖 Marking notification as read:", notificationId);
       await StudentAPI.markMobileNotificationAsRead(studentId, notificationId);
 
       // Update local state
@@ -162,6 +170,7 @@ export default function NotificationsScreen({
 
       // Update badge count
       updateBadgeCount(notificationId);
+      console.log("✅ Notification marked as read successfully");
     } catch (error) {
       console.error("Error marking notification as read:", error);
       // Don't show error to user as this is not critical
@@ -197,7 +206,7 @@ export default function NotificationsScreen({
           !item.isRead && styles.unread,
           isHighlighted && styles.highlighted,
         ]}
-        onPress={() => !item.isRead && markAsRead(item.id)}
+        onPress={() => markAsRead(item.id)}
         activeOpacity={0.7}
       >
         <View style={styles.notificationHeader}>
