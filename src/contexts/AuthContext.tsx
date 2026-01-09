@@ -43,21 +43,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuthStatus();
   }, []);
 
-  // Also check token validity periodically while app is active
-  useEffect(() => {
-    if (user) {
-      const interval = setInterval(async () => {
-        const isValid = await AuthService.checkTokenValidity();
-        if (!isValid) {
-          console.log("🔐 AuthContext: Token expired, logging out");
-          await logout();
-        }
-      }, 5 * 60 * 1000); // Check every 5 minutes
-
-      return () => clearInterval(interval);
-    }
-  }, [user]);
-
   const checkAuthStatus = async () => {
     try {
       console.log("🔐 AuthContext: Starting auto-login check...");

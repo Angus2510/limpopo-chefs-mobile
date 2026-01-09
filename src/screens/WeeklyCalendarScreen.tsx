@@ -342,7 +342,7 @@ export default function WeeklyCalendarScreen() {
                 {format(startOfCurrentWeek, "MMMM d, yyyy")}
               </Title>
               <Text style={styles.headerSubtitle}>
-                Week {currentWeekNumber} of {format(currentDate, "yyyy")}
+                Week {currentWeekNumber}
               </Text>
             </View>
             <View style={styles.navigationButtons}>

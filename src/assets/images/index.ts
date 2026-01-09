@@ -15,6 +15,7 @@ export const images = {
   // profilePlaceholder: require('./profile-placeholder.png'),
   logo: require("../../../assets/logo-icon.png"), // Limpopo Chefs Academy logo
   limpopoLogo: require("../../../assets/logo-icon.png"), // Alternative name for the same logo
+  fullLogo: require("./logo.png"), // Full logo with text
   // yourImage: require('./your-image.png'),
 };
 

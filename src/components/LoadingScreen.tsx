@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, StyleSheet, ActivityIndicator, Image } from "react-native";
-import AppLogo from "./AppLogo";
 
 interface LoadingScreenProps {
   message?: string;
@@ -14,7 +13,11 @@ export default function LoadingScreen({
       <View style={styles.content}>
         {/* App Logo */}
         <View style={styles.logoContainer}>
-          <AppLogo size="large" />
+          <Image
+            source={require("../assets/images/logo.png")}
+            style={styles.fullLogo}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Loading indicator */}
@@ -26,7 +29,7 @@ export default function LoadingScreen({
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Culinary Excellence</Text>
+        <Text style={styles.footerText}>Shaping people's future</Text>
       </View>
     </View>
   );
@@ -45,7 +48,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   logoContainer: {
-    marginBottom: 40,
+    marginBottom: 20,
+    height: 200,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullLogo: {
+    width: "75%",
+    height: "100%",
   },
   loadingContainer: {
     alignItems: "center",

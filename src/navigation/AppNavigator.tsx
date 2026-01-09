@@ -30,7 +30,6 @@ import SORScreen from "../screens/SORScreen";
 import WELScreen from "../screens/WELScreen";
 import WELLocationsScreen from "../screens/WELLocationsScreen";
 import WeeklyCalendarScreen from "../screens/WeeklyCalendarScreen";
-import AnnouncementsScreen from "../screens/AnnouncementsScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 
 // More Home Screen component
@@ -107,10 +106,10 @@ function MoreHomeScreen({ navigation }: any) {
             shadowOpacity: 0.2,
             shadowRadius: 2,
           }}
-          onPress={() => navigation.navigate("Announcements")}
+          onPress={() => navigation.navigate("Profile")}
         >
           <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
-            📢 Announcements
+            👤 Profile
           </Text>
         </TouchableOpacity>
 
@@ -164,44 +163,6 @@ function MoreHomeScreen({ navigation }: any) {
         >
           <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
             💰 Fees
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={{
-            backgroundColor: "white",
-            padding: 15,
-            borderRadius: 8,
-            marginBottom: 10,
-            elevation: 2,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.2,
-            shadowRadius: 2,
-          }}
-          onPress={() => navigation.navigate("Downloads")}
-        >
-          <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
-            📥 Downloads
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={{
-            backgroundColor: "white",
-            padding: 15,
-            borderRadius: 8,
-            marginBottom: 10,
-            elevation: 2,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.2,
-            shadowRadius: 2,
-          }}
-          onPress={() => navigation.navigate("Profile")}
-        >
-          <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
-            👤 Profile
           </Text>
         </TouchableOpacity>
 
@@ -285,6 +246,10 @@ export type BottomTabParamList = {
   Dashboard: undefined;
   Assignments: undefined;
   Attendance: undefined;
+  Notifications:
+    | { notificationId?: string; highlightNotification?: boolean }
+    | undefined;
+  Downloads: undefined;
   More: undefined;
 };
 
@@ -306,11 +271,6 @@ function MoreStackNavigator() {
         name="WeeklyCalendar"
         component={WeeklyCalendarScreen}
         options={{ title: "Weekly Schedule" }}
-      />
-      <MoreStack.Screen
-        name="Announcements"
-        component={AnnouncementsScreen}
-        options={{ title: "Announcements" }}
       />
       <MoreStack.Screen
         name="Notifications"
@@ -369,12 +329,14 @@ function MoreTabsScreen() {
 
           if (route.name === "Dashboard") {
             iconName = focused ? "home" : "home-outline";
-          } else if (route.name === "Assignments") {
-            iconName = focused ? "document-text" : "document-text-outline";
           } else if (route.name === "Attendance") {
             iconName = focused
               ? "checkmark-circle"
               : "checkmark-circle-outline";
+          } else if (route.name === "Notifications") {
+            iconName = focused ? "notifications" : "notifications-outline";
+          } else if (route.name === "Downloads") {
+            iconName = focused ? "download" : "download-outline";
           } else if (route.name === "More") {
             iconName = focused ? "menu" : "menu-outline";
           } else {
@@ -384,7 +346,7 @@ function MoreTabsScreen() {
           const IconComponent = () => (
             <View style={{ position: "relative" }}>
               <Ionicons name={iconName} size={size} color={color} />
-              {route.name === "More" && unreadCount > 0 && (
+              {route.name === "Notifications" && unreadCount > 0 && (
                 <NotificationBadge
                   count={unreadCount}
                   size="small"
@@ -402,8 +364,9 @@ function MoreTabsScreen() {
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-
       <Tab.Screen name="Attendance" component={AttendanceTabNavigator} />
+      <Tab.Screen name="Notifications" component={NotificationsScreen} />
+      <Tab.Screen name="Downloads" component={DownloadsScreen} />
       <Tab.Screen
         name="More"
         component={MoreStackNavigator}

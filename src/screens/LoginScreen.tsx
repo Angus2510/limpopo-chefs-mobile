@@ -6,17 +6,11 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Image,
 } from "react-native";
-import {
-  Card,
-  Title,
-  TextInput,
-  Button,
-  Text,
-  ActivityIndicator,
-} from "react-native-paper";
+import { Card, TextInput, Button, ActivityIndicator, Text, Title } from "react-native-paper";
 import { useAuth } from "../contexts/AuthContext";
-import AppLogo from "../components/AppLogo";
+import images from "../assets/images";
 
 export default function LoginScreen() {
   const [identifier, setIdentifier] = useState("");
@@ -61,16 +55,16 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.logoContainer}>
-          <AppLogo size="large" showText={true} />
+          <Image
+            source={require("../assets/images/logo.png")}
+            style={styles.fullLogo}
+            resizeMode="contain"
+          />
         </View>
 
         <Card style={styles.loginCard}>
           <Card.Content>
             <Title style={styles.loginTitle}>Welcome Back</Title>
-            <Text style={styles.loginSubtitle}>
-              Sign in to access your student portal
-            </Text>
-
             <TextInput
               label="Email or Username"
               value={identifier}
@@ -144,33 +138,35 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     justifyContent: "center",
-    padding: 20,
+    padding: 10,
   },
   logoContainer: {
     alignItems: "center",
-    marginBottom: 40,
+    marginBottom: 5,
+    height: 180,
+    justifyContent: "center",
+  },
+  fullLogo: {
+    width: "70%",
+    height: "100%",
   },
   loginCard: {
     elevation: 8,
     borderRadius: 12,
+    marginTop: 10,
   },
   loginTitle: {
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 4,
     color: "#333",
-  },
-  loginSubtitle: {
-    textAlign: "center",
-    marginBottom: 24,
-    color: "#666",
-    fontSize: 14,
+    fontSize: 20,
   },
   input: {
-    marginBottom: 16,
+    marginBottom: 10,
   },
   loginButton: {
-    marginTop: 8,
-    marginBottom: 16,
+    marginTop: 4,
+    marginBottom: 10,
     borderRadius: 8,
   },
   loginButtonContent: {
@@ -180,7 +176,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   footer: {
-    marginTop: 40,
+    marginTop: 10,
     alignItems: "center",
   },
   footerText: {

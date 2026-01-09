@@ -7,6 +7,7 @@ import {
   RefreshControl,
   Alert,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import {
   Card,
@@ -19,7 +20,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import StudentAPI from "../services/api";
-import AppLogo from "../components/AppLogo";
 import { DashboardData, Student } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -352,7 +352,11 @@ export default function DashboardScreen() {
     >
       {/* App Logo */}
       <View style={styles.logoContainer}>
-        <AppLogo size="medium" showText={true} />
+        <Image
+          source={require("../assets/images/logo.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
       </View>
 
       {/* Welcome Card */}
@@ -713,6 +717,10 @@ const styles = StyleSheet.create({
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
+  },
+  logo: {
+    width: "60%",
+    height: 100,
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
