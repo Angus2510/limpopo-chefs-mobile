@@ -634,78 +634,10 @@ export default function ProfileScreen() {
       >
         {renderStudentHeader()}
 
-        {/* Tabs */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <View style={styles.tabContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.tab,
-                  activeTab === "overview" && styles.activeTab,
-                ]}
-                onPress={() => handleTabChange("overview")}
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === "overview" && styles.activeTabText,
-                  ]}
-                >
-                  Overview
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.tab,
-                  activeTab === "documents" && styles.activeTab,
-                ]}
-                onPress={() => handleTabChange("documents")}
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === "documents" && styles.activeTabText,
-                  ]}
-                >
-                  Documents
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.tab,
-                  activeTab === "results" && styles.activeTab,
-                ]}
-                onPress={() => handleTabChange("results")}
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === "results" && styles.activeTabText,
-                  ]}
-                >
-                  Results
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.tab,
-                  activeTab === "finance" && styles.activeTab,
-                ]}
-                onPress={() => handleTabChange("finance")}
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === "finance" && styles.activeTabText,
-                  ]}
-                >
-                  Finance
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.tabContent}>{renderTabContent()}</View>
-          </Card.Content>
-        </Card>
+        {/* Profile Content */}
+        {renderStudentInfo()}
+        {renderAddressInfo()}
+        {renderGuardianInfo()}
       </ScrollView>
     </View>
   );
