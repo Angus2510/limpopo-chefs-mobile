@@ -531,7 +531,7 @@ export default function ProfileScreen() {
               {documents.length > 0 ? (
                 documents.map((doc, index) => (
                   <View key={index} style={styles.documentItem}>
-                    <Ionicons name="document-text" size={24} color="#2196F3" />
+                    <Ionicons name="document-text" size={24} color="#014b01" />
                     <Text style={styles.documentTitle}>
                       {doc.title || doc.name || `Document ${index + 1}`}
                     </Text>
@@ -661,13 +661,14 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: "#2196F3",
+    color: "#014b01",
     fontWeight: "500",
   },
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
     padding: 16,
+    paddingTop: 48,
   },
   // Header styles
   profileImageContainer: {
@@ -680,7 +681,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   avatarPlaceholder: {
-    backgroundColor: "#2196F3",
+    backgroundColor: "#D1ffbd",
   },
   headerInfo: {
     alignItems: "center",
@@ -747,7 +748,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   avatar: {
-    backgroundColor: "#2196F3",
+    backgroundColor: "#D1ffbd",
   },
   card: {
     marginBottom: 16,
@@ -788,7 +789,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   activeTab: {
-    backgroundColor: "#2196F3",
+    backgroundColor: "#014b01",
   },
   tabText: {
     color: "#666",
@@ -839,7 +840,7 @@ const styles = StyleSheet.create({
   },
   resultGrade: {
     fontWeight: "bold",
-    color: "#2196F3",
+    color: "#014b01",
   },
 
   // Competency styles

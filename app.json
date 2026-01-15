@@ -42,7 +42,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.limpopoChefs.mobile",
-      "versionCode": 9,
+      "versionCode": 11,
       "userInterfaceStyle": "light",
       "permissions": [
         "android.permission.CAMERA",

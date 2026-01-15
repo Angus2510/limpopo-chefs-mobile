@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   scanAgainButton: {
-    backgroundColor: "#2196F3",
+    backgroundColor: "#014b01",
   },
   card: {
     margin: 16,
@@ -217,6 +217,6 @@ const styles = StyleSheet.create({
   },
   manualButton: {
     marginTop: 20,
-    backgroundColor: "#2196F3",
+    backgroundColor: "#014b01",
   },
 });

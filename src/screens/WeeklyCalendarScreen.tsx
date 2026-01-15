@@ -329,7 +329,7 @@ export default function WeeklyCalendarScreen() {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#2196F3" />
+          <Ionicons name="arrow-back" size={24} color="#014b01" />
           <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
       </View>
@@ -350,10 +350,10 @@ export default function WeeklyCalendarScreen() {
                 style={styles.navButton}
                 onPress={goToPreviousWeek}
               >
-                <Ionicons name="chevron-back" size={24} color="#2196F3" />
+                <Ionicons name="chevron-back" size={24} color="#014b01" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.navButton} onPress={goToNextWeek}>
-                <Ionicons name="chevron-forward" size={24} color="#2196F3" />
+                <Ionicons name="chevron-forward" size={24} color="#014b01" />
               </TouchableOpacity>
             </View>
           </View>
@@ -395,6 +395,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+    paddingTop: 48,
   },
   loadingContainer: {
     flex: 1,
@@ -463,7 +464,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: "#2196F3",
+    borderLeftColor: "#D1ffbd",
   },
   eventHeader: {
     flexDirection: "row",
@@ -525,7 +526,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     marginLeft: 8,
     fontSize: 16,
-    color: "#2196F3",
+    color: "#014b01",
     fontWeight: "500",
   },
 });

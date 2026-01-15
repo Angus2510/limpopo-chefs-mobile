@@ -182,7 +182,7 @@ export default function WELScreen() {
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.header}>
-            <Ionicons name="business" size={24} color="#2196F3" />
+            <Ionicons name="business" size={24} color="#014b01" />
             <Title style={styles.title}>WEL Hours</Title>
           </View>
 
@@ -283,6 +283,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
     padding: 16,
+    paddingTop: 48,
   },
   loadingContainer: {
     flex: 1,

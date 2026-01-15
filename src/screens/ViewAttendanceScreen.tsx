@@ -90,7 +90,7 @@ export default function ViewAttendanceScreen() {
       case "absent with reason":
         return "#FF9800"; // Orange
       case "W.E.L":
-        return "#2196F3"; // Blue
+        return "#D1ffbd"; // Blue
       case "sick":
         return "#9C27B0"; // Purple
       default:
@@ -252,6 +252,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+    paddingTop: 48,
   },
   scrollView: {
     flex: 1,

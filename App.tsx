@@ -23,7 +23,7 @@ const lightTheme = {
   ...MD3LightTheme,
   colors: {
     ...MD3LightTheme.colors,
-    primary: "#2196F3",
+    primary: "#014b01",
     background: "#ffffff",
     surface: "#ffffff",
     onBackground: "#000000",
@@ -37,12 +37,12 @@ const navigationTheme = {
   dark: false,
   colors: {
     ...DefaultTheme.colors,
-    primary: "#2196F3",
+    primary: "#014b01",
     background: "#ffffff",
     card: "#ffffff",
     text: "#000000",
     border: "#e0e0e0",
-    notification: "#2196F3",
+    notification: "#014b01",
   },
 };
 

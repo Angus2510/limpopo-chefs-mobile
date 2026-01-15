@@ -36,5 +36,14 @@
       },
       "channel": "production"
     }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "anguscarey390@gmail.com",
+        "ascAppId": "6738618878",
+        "appleTeamId": "YU3WA8Z4R7"
+      }
+    }
   }
 }

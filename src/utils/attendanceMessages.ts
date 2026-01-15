@@ -66,7 +66,7 @@ export const showAttendanceToast = (config: AttendanceMessageConfig) => {
 
   const colors = {
     success: { background: "#4CAF50", icon: "✓" },
-    info: { background: "#2196F3", icon: "ℹ" },
+    info: { background: "#D1ffbd", icon: "ℹ" },
     error: { background: "#F44336", icon: "✗" },
   };
 

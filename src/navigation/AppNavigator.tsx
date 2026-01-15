@@ -72,7 +72,7 @@ function MoreHomeScreen({ navigation }: any) {
 
         <TouchableOpacity
           style={{
-            backgroundColor: "#e3f2fd",
+            backgroundColor: "#D1ffbd",
             padding: 20,
             borderRadius: 8,
             marginBottom: 15,
@@ -82,14 +82,14 @@ function MoreHomeScreen({ navigation }: any) {
             shadowOpacity: 0.3,
             shadowRadius: 3,
             borderWidth: 2,
-            borderColor: "#2196F3",
+            borderColor: "#014b01",
           }}
           onPress={() => {
             console.log("Weekly Calendar button pressed");
             navigation.navigate("WeeklyCalendar");
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "bold", color: "#1565c0" }}>
+          <Text style={{ fontSize: 18, fontWeight: "bold", color: "#5a8a4d" }}>
             📅 Weekly Schedule
           </Text>
         </TouchableOpacity>
@@ -181,7 +181,7 @@ function MoreHomeScreen({ navigation }: any) {
           onPress={() => navigation.navigate("SOR")}
         >
           <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
-            📋 Student Records
+            📋 Student Results
           </Text>
         </TouchableOpacity>
 
@@ -307,7 +307,7 @@ function MoreStackNavigator() {
       <MoreStack.Screen
         name="SOR"
         component={SORScreen}
-        options={{ title: "Student Records" }}
+        options={{ title: "Student Results" }}
       />
       <MoreStack.Screen
         name="WEL"

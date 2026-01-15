@@ -377,7 +377,7 @@ export default function DashboardScreen() {
       {/* Quick Stats */}
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <Ionicons name="calendar" size={24} color="#2196F3" />
+          <Ionicons name="calendar" size={24} color="#014b01" />
           <Text style={styles.statNumber}>
             {dashboardData.upcomingEvents.length}
           </Text>
@@ -520,7 +520,7 @@ export default function DashboardScreen() {
                 navigation.navigate("More" as any, { screen: "Downloads" })
               }
             >
-              <Ionicons name="download-outline" size={32} color="#2196F3" />
+              <Ionicons name="download-outline" size={32} color="#014b01" />
               <Text style={styles.quickActionText}>Downloads</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -529,7 +529,7 @@ export default function DashboardScreen() {
                 navigation.navigate("More" as any, { screen: "Profile" })
               }
             >
-              <Ionicons name="person-outline" size={32} color="#2196F3" />
+              <Ionicons name="person-outline" size={32} color="#014b01" />
               <Text style={styles.quickActionText}>Profile</Text>
             </TouchableOpacity>
           </View>
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#2196F3",
+    color: "#014b01",
     marginTop: 8,
   },
   statLabel: {
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
   },
   quickActionText: {
     fontSize: 12,
-    color: "#2196F3",
+    color: "#014b01",
     marginTop: 8,
     textAlign: "center",
   },

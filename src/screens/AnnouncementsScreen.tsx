@@ -265,9 +265,9 @@ export default function AnnouncementsScreen() {
                 disabled={isMarkingRead}
               >
                 {isMarkingRead ? (
-                  <ActivityIndicator size="small" color="#2196F3" />
+                  <ActivityIndicator size="small" color="#014b01" />
                 ) : (
-                  <Ionicons name="checkmark" size={20} color="#2196F3" />
+                  <Ionicons name="checkmark" size={20} color="#014b01" />
                 )}
               </TouchableOpacity>
             )}
@@ -289,7 +289,7 @@ export default function AnnouncementsScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
+        <ActivityIndicator size="large" color="#014b01" />
         <Text style={styles.loadingText}>Loading announcements...</Text>
       </View>
     );
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   },
   unreadCard: {
     borderLeftWidth: 4,
-    borderLeftColor: "#2196F3",
+    borderLeftColor: "#D1ffbd",
     elevation: 4,
   },
   announcementHeader: {
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#2196F3",
+    backgroundColor: "#D1ffbd",
     marginLeft: 8,
   },
   metaRow: {
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   markReadButton: {
     padding: 8,
     borderRadius: 20,
-    backgroundColor: "#e3f2fd",
+    backgroundColor: "#014b01",
     marginLeft: 12,
   },
   announcementContent: {
@@ -483,6 +483,6 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
-    backgroundColor: "#2196F3",
+    backgroundColor: "#014b01",
   },
 });

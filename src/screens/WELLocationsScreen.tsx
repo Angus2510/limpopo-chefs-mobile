@@ -93,7 +93,7 @@ export default function WELLocationsScreen() {
       <Card style={styles.headerCard}>
         <Card.Content>
           <View style={styles.header}>
-            <Ionicons name="location" size={24} color="#2196F3" />
+            <Ionicons name="location" size={24} color="#014b01" />
             <Title style={styles.title}>Work Experience Locations</Title>
           </View>
           <Paragraph>
@@ -189,6 +189,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+    paddingTop: 48,
   },
   loadingContainer: {
     flex: 1,
