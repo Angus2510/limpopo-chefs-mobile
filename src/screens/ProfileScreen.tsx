@@ -618,14 +618,6 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.screenContainer}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-      </View>
       <ScrollView
         style={styles.container}
         refreshControl={
@@ -663,6 +655,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#014b01",
     fontWeight: "500",
+  },
+  screenContainer: {
+    flex: 1,
   },
   container: {
     flex: 1,

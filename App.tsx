@@ -3,7 +3,7 @@ import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { Provider as PaperProvider, MD3LightTheme } from "react-native-paper";
 import { StatusBar } from "expo-status-bar";
 import * as Notifications from "expo-notifications";
-import { AuthProvider } from "./src/contexts/AuthContext";
+import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import {
   NotificationBadgeProvider,
   useNotificationBadge,
@@ -90,10 +90,17 @@ function AppWithNotifications() {
   const responseListener = useRef<Notifications.Subscription | null>(null);
   const navigationRef = useRef<any>(null);
   const { incrementUnread, refreshUnreadCount } = useNotificationBadge();
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Setup push notifications if enabled (disabled in Expo Go)
-    setupPushNotifications();
+    // Setup push notifications when user is available
+    if (user?.id) {
+      console.log(
+        "👤 User logged in, setting up push notifications for:",
+        user.id
+      );
+      setupPushNotifications(user.id);
+    }
 
     return () => {
       // Cleanup notification listeners
@@ -104,21 +111,22 @@ function AppWithNotifications() {
         responseListener.current.remove();
       }
     };
-  }, []);
+  }, [user?.id]);
 
-  const setupPushNotifications = async () => {
+  const setupPushNotifications = async (studentId: string) => {
     try {
-      // Check if push notifications are enabled (disabled in Expo Go)
-      if (!APP_CONFIG.FEATURES.ENABLE_PUSH_NOTIFICATIONS) {
-        console.log(
-          "📱 Push notifications disabled in Expo Go - using notification polling instead"
-        );
-        return;
-      }
+      console.log("📱 Setting up push notifications for student:", studentId);
 
-      // Register for push notifications
-      const studentId = APP_CONFIG.DEFAULT_STUDENT_ID; // Replace with actual student ID from auth
-      await registerForPushNotificationsAsync(studentId);
+      // Register for push notifications with actual student ID
+      const token = await registerForPushNotificationsAsync(studentId);
+
+      if (token) {
+        console.log("✅ Push token registered:", token);
+      } else {
+        console.log(
+          "⚠️ Push token registration failed - notifications may not work"
+        );
+      }
 
       // Listen for notifications when app is running
       notificationListener.current = addNotificationListener((notification) => {

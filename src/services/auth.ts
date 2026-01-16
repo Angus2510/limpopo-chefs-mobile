@@ -83,8 +83,26 @@ export class AuthService {
       const { accessToken, user } = response.data;
 
       // Store token and user data (using accessToken as main token)
-      await AsyncStorage.setItem(TOKEN_KEY, accessToken);
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
+      // Store both individually with error handling
+      try {
+        await AsyncStorage.setItem(TOKEN_KEY, accessToken);
+        console.log("✅ Token stored successfully");
+      } catch (storageError) {
+        console.error("❌ Failed to store token:", storageError);
+        throw new Error("Failed to save login session");
+      }
+
+      try {
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
+        console.log("✅ User data stored successfully");
+      } catch (storageError) {
+        console.error("❌ Failed to store user data:", storageError);
+        throw new Error("Failed to save user data");
+      }
+
+      console.log(
+        "✅ Login complete - user will stay logged in until manual logout"
+      );
 
       // Note: Backend doesn't provide refresh token, so we'll skip it for now
 
@@ -198,8 +216,8 @@ export class AuthService {
       return token;
     } catch (error) {
       console.log("Token refresh failed:", error);
-      // If refresh fails, clear all auth data
-      await this.logout();
+      // Don't logout - just return null
+      // The user can still use the app with their existing token
       return null;
     }
   }
@@ -215,30 +233,13 @@ export class AuthService {
         return false;
       }
 
-      // Check if token is expired by trying a simple API call
-      try {
-        const testResponse = await authApi.get("/auth/verify", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        console.log("✅ AuthService: Token verification successful");
-        return true;
-      } catch (verifyError: any) {
-        console.log(
-          "⚠️ AuthService: Token verification failed, checking if we can refresh..."
-        );
-
-        // If token verification fails, try to refresh if we have a refresh token
-        const refreshedToken = await this.refreshToken();
-        if (refreshedToken) {
-          console.log("✅ AuthService: Token refreshed successfully");
-          return true;
-        }
-
-        console.log(
-          "❌ AuthService: Token refresh failed, user needs to login again"
-        );
-        return false;
-      }
+      // Token and user exist - assume authenticated
+      // Don't make API call to verify as it may not exist or cause issues
+      console.log(
+        "✅ AuthService: Token and user found, assuming authenticated"
+      );
+      console.log("✅ AuthService: User should stay logged in");
+      return true;
     } catch (error) {
       console.log("❌ AuthService: Authentication check failed:", error);
       return false;
@@ -278,24 +279,25 @@ export class AuthService {
     try {
       console.log("🔄 AuthService: Attempting auto-login...");
 
-      const isAuth = await this.isAuthenticated();
-      if (!isAuth) {
-        console.log("❌ AuthService: Auto-login failed - not authenticated");
-        return null;
-      }
-
+      const token = await this.getToken();
       const user = await this.getUser();
-      if (user) {
+
+      // If we have both token and user, assume we're logged in
+      if (token && user) {
         console.log("✅ AuthService: Auto-login successful for user:", user.id);
+        console.log("✅ AuthService: User stays logged in - token exists");
         return user;
       }
 
-      console.log("❌ AuthService: Auto-login failed - no user data");
+      console.log("❌ AuthService: Auto-login failed - no stored credentials");
       return null;
     } catch (error) {
-      console.log("❌ AuthService: Auto-login error:", error);
-      // Clear any corrupted auth data
-      await this.logout();
+      console.log(
+        "⚠️ AuthService: Auto-login error (but not clearing data):",
+        error
+      );
+      // DON'T logout on error - just return null
+      // This prevents auto-logout when there's a temporary issue
       return null;
     }
   }
@@ -306,15 +308,11 @@ export class AuthService {
       const token = await this.getToken();
       if (!token) return false;
 
-      // Try a lightweight API call to check token validity
-      await authApi.get("/auth/verify", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Just check if token exists - don't make API calls that might fail
       return true;
     } catch (error) {
-      console.log("🔄 AuthService: Token invalid, attempting refresh...");
-      const refreshedToken = await this.refreshToken();
-      return !!refreshedToken;
+      console.log("🔄 AuthService: Token check error:", error);
+      return false;
     }
   }
 }

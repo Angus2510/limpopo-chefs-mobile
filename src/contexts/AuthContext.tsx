@@ -56,6 +56,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           "✅ AuthContext: Auto-login successful for user:",
           userData.id
         );
+        console.log("✅ AuthContext: User will stay logged in");
         setUser(userData);
 
         // Load student profile data
@@ -94,6 +95,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const response = await AuthService.login(credentials);
       setUser(response.user);
+
+      console.log("✅ Login successful - user will stay logged in");
+      console.log("✅ Token and user data saved to device storage");
 
       // Load student profile after successful login
       try {

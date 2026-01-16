@@ -323,17 +323,6 @@ export default function WeeklyCalendarScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Back Button */}
-      <View style={styles.backButtonContainer}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#014b01" />
-          <Text style={styles.backButtonText}>Back</Text>
-        </TouchableOpacity>
-      </View>
-
       <Card style={styles.headerCard}>
         <Card.Content>
           <View style={styles.headerContent}>
@@ -513,20 +502,5 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 14,
     color: "#999",
-  },
-  backButtonContainer: {
-    padding: 16,
-    paddingBottom: 0,
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  backButtonText: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: "#014b01",
-    fontWeight: "500",
   },
 });

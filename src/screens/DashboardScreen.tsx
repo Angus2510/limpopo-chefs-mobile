@@ -556,6 +556,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+    paddingTop: 48,
   },
   loadingContainer: {
     flex: 1,
@@ -713,7 +714,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 8,
     marginHorizontal: 16,
-    marginTop: 10,
+    marginTop: 20,
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
