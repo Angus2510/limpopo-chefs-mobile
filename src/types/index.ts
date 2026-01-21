@@ -39,6 +39,11 @@ export interface AttendanceRecord {
   date: string;
   status: "full" | "absent" | "absent with reason" | "W.E.L" | "sick";
   timeCheckedIn?: string;
+  outcome?: {
+    id?: string;
+    title?: string;
+  };
+  outcomeTitle?: string; // Fallback if outcome is string
 }
 
 export interface Fee {

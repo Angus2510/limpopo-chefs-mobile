@@ -2,7 +2,7 @@
   "expo": {
     "name": "LCA Portal",
     "slug": "limpopo-chefs-mobile",
-    "version": "1.0.6",
+    "version": "1.0.9",
     "description": "The official mobile app for Limpopo Chefs Academy students. Access your academic information, track progress, view announcements, manage attendance, and stay connected with your culinary education journey.",
     "orientation": "portrait",
     "icon": "assets/logo-icon.png",
@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.limpopoChefs.mobile",
       "userInterfaceStyle": "light",
-      "buildNumber": "9",
+      "buildNumber": "13",
       "requireFullScreen": false,
       "teamId": "YU3WA8Z4R7",
       "infoPlist": {
@@ -42,7 +42,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.limpopoChefs.mobile",
-      "versionCode": 11,
+      "versionCode": 13,
       "userInterfaceStyle": "light",
       "permissions": [
         "android.permission.CAMERA",
@@ -52,7 +52,8 @@
         "android.permission.POST_NOTIFICATIONS"
       ],
       "usesCleartextTraffic": false,
-      "networkSecurityConfig": "network_security_config"
+      "networkSecurityConfig": "network_security_config",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "assets/favicon.png"
@@ -62,6 +63,12 @@
         "projectId": "b1dbc470-4e3c-4d09-8b0f-ab9117ed6f33"
       }
     },
+    "notification": {
+      "icon": "./assets/logo-icon.png",
+      "color": "#014b01",
+      "androidMode": "default",
+      "androidCollapsedTitle": "{{unread_count}} new notifications"
+    },
     "owner": "anguscarey",
     "runtimeVersion": {
       "policy": "appVersion"
@@ -69,6 +76,18 @@
     "updates": {
       "url": "https://u.expo.dev/b1dbc470-4e3c-4d09-8b0f-ab9117ed6f33"
     },
-    "plugins": ["expo-font", "expo-build-properties"]
+    "plugins": [
+      "expo-font",
+      "expo-build-properties",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo-icon.png",
+          "color": "#014b01",
+          "androidMode": "default",
+          "androidCollapsedTitle": "{{unread_count}} new notifications"
+        }
+      ]
+    ]
   }
 }

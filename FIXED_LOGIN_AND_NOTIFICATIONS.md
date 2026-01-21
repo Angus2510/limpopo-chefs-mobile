@@ -153,9 +153,62 @@
    - Already has `POST_NOTIFICATIONS` permission
    - Ready for push notifications
 
+## ⚠️ IMPORTANT: Push Notifications Update
+
+### What's Fixed in the App:
+
+✅ Push token registration with your user ID
+✅ Push notification listener configured
+✅ Notification permissions requested
+✅ Badge count system working
+
+### What's Still Needed:
+
+❌ **Backend must send push notifications**
+
+Your app is **ready to receive** notifications, but the backend needs to **actively send** them!
+
+### How To Test Right Now:
+
+1. **Get Your Push Token:**
+
+   - Login to the app
+   - Look for log: `✅ Got push token: ExponentPushToken[...]`
+   - Copy this token
+
+2. **Send Test Notification:**
+
+   ```bash
+   node scripts/test-push-notification.js "ExponentPushToken[your-token-here]"
+   ```
+
+   Or visit: https://expo.dev/notifications and paste your token
+
+3. **Check Your Phone:**
+   - Notification should appear immediately
+   - If it does: ✅ App is working, backend needs to send notifications
+   - If it doesn't: ❌ Check permissions and configuration
+
+### Backend Implementation Needed:
+
+The backend needs to install `expo-server-sdk` and send push notifications when:
+
+- 📢 New announcement is posted
+- 💰 Fee payment is due
+- ✅ Attendance is marked
+- 📋 New grades available
+- 💼 WEL placement assigned
+
+See: [NOTIFICATION_TROUBLESHOOTING.md](NOTIFICATION_TROUBLESHOOTING.md) for full details.
+
+---
+
 ## ✅ Summary
 
-**Login Persistence:** FIXED - You stay logged in forever until manual logout
-**Push Notifications:** FIXED - Notifications register with your actual user ID and will show on phone
+**Login Persistence:** ✅ FIXED - You stay logged in forever until manual logout
+**Push Notifications:** ⚠️ PARTIALLY FIXED
 
-Both issues are now resolved. The app will behave like Facebook - stay logged in across app restarts and show notifications when they arrive.
+- ✅ App is ready to receive notifications
+- ❌ Backend needs to send notifications
+
+The app will behave like Facebook - stay logged in across app restarts. Notifications will show on phone once the backend starts sending them.

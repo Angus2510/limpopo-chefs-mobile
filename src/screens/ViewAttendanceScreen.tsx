@@ -33,6 +33,26 @@ export default function ViewAttendanceScreen() {
 
   const studentId = user?.id;
 
+  // Calculate attendance statistics
+  const getAttendanceStats = () => {
+    if (attendanceRecords.length === 0) {
+      return { totalDays: 0, presentDays: 0, absentDays: 0, percentage: 0 };
+    }
+
+    const totalDays = attendanceRecords.length;
+    const presentDays = attendanceRecords.filter(
+      (record) => record.status === "full"
+    ).length;
+    const absentDays = attendanceRecords.filter(
+      (record) => record.status === "absent" || record.status === "sick"
+    ).length;
+    const percentage = totalDays > 0 ? (presentDays / totalDays) * 100 : 0;
+
+    return { totalDays, presentDays, absentDays, percentage };
+  };
+
+  const stats = getAttendanceStats();
+
   const fetchAttendance = async (isRefresh = false) => {
     if (!isAuthenticated || !studentId) return;
 
@@ -186,6 +206,39 @@ export default function ViewAttendanceScreen() {
           </Text>
         </Surface>
 
+        {/* Attendance Statistics */}
+        {attendanceRecords.length > 0 && (
+          <Card style={styles.card}>
+            <Card.Content>
+              <Title style={styles.sectionTitle}>Attendance Summary</Title>
+              <View style={styles.statsGrid}>
+                <View style={styles.statBox}>
+                  <Text style={styles.statNumber}>{stats.totalDays}</Text>
+                  <Text style={styles.statLabel}>Total Days</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={[styles.statNumber, { color: "#4CAF50" }]}>
+                    {stats.presentDays}
+                  </Text>
+                  <Text style={styles.statLabel}>Present</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={[styles.statNumber, { color: "#F44336" }]}>
+                    {stats.absentDays}
+                  </Text>
+                  <Text style={styles.statLabel}>Absent</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={[styles.statNumber, { color: "#2196F3" }]}>
+                    {stats.percentage.toFixed(1)}%
+                  </Text>
+                  <Text style={styles.statLabel}>Attendance</Text>
+                </View>
+              </View>
+            </Card.Content>
+          </Card>
+        )}
+
         {/* WEL Records */}
         {welRecords.length > 0 && (
           <Card style={styles.card}>
@@ -220,9 +273,16 @@ export default function ViewAttendanceScreen() {
               attendanceRecords.map((record) => (
                 <Surface key={record.id} style={styles.attendanceRecord}>
                   <View style={styles.recordHeader}>
-                    <Text style={styles.recordDate}>
-                      {formatDate(record.date)}
-                    </Text>
+                    <View style={styles.recordLeft}>
+                      <Text style={styles.recordDate}>
+                        {formatDate(record.date)}
+                      </Text>
+                      {(record.outcome?.title || record.outcomeTitle) && (
+                        <Text style={styles.activityText}>
+                          {record.outcome?.title || record.outcomeTitle}
+                        </Text>
+                      )}
+                    </View>
                     <Chip
                       style={[
                         styles.statusChip,
@@ -311,13 +371,23 @@ const styles = StyleSheet.create({
   recordHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: 4,
+  },
+  recordLeft: {
+    flex: 1,
+    marginRight: 8,
   },
   recordDate: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
+  },
+  activityText: {
+    fontSize: 13,
+    color: "#014b01",
+    marginTop: 2,
+    fontWeight: "500",
   },
   statusChip: {
     height: 28,
@@ -326,6 +396,27 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 12,
+  },
+  statsGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+  },
+  statBox: {
+    alignItems: "center",
+    width: "23%",
+    padding: 8,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  statLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 4,
+    textAlign: "center",
   },
   timeText: {
     fontSize: 14,

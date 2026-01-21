@@ -640,25 +640,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 5,
-    backgroundColor: "#f5f5f5",
-  },
-  backButton: {
-    padding: 10,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: "#014b01",
-    fontWeight: "500",
-  },
-  screenContainer: {
-    flex: 1,
-  },
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",

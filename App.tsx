@@ -116,12 +116,13 @@ function AppWithNotifications() {
   const setupPushNotifications = async (studentId: string) => {
     try {
       console.log("📱 Setting up push notifications for student:", studentId);
+      console.log("📱 User object:", JSON.stringify(user, null, 2));
 
       // Register for push notifications with actual student ID
       const token = await registerForPushNotificationsAsync(studentId);
 
       if (token) {
-        console.log("✅ Push token registered:", token);
+        console.log("✅ Push token registered and sent to backend:", token);
       } else {
         console.log(
           "⚠️ Push token registration failed - notifications may not work"
@@ -129,11 +130,26 @@ function AppWithNotifications() {
       }
 
       // Listen for notifications when app is running
-      notificationListener.current = addNotificationListener((notification) => {
-        console.log("🔔 Notification received while app active:", notification);
-        // Increment unread count when notification is received
-        incrementUnread();
-      });
+      notificationListener.current = addNotificationListener(
+        async (notification) => {
+          console.log(
+            "🔔 Notification received while app active:",
+            notification
+          );
+
+          // Increment unread count when notification is received
+          incrementUnread();
+
+          // Update app badge count
+          try {
+            const currentBadge = await Notifications.getBadgeCountAsync();
+            await Notifications.setBadgeCountAsync(currentBadge + 1);
+            console.log("📱 App badge updated:", currentBadge + 1);
+          } catch (error) {
+            console.error("❌ Error updating badge count:", error);
+          }
+        }
+      );
 
       // Listen for user tapping on notifications
       responseListener.current = addNotificationResponseListener((response) => {

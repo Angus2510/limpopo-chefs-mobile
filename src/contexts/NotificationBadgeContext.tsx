@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import { AppState } from "react-native";
+import * as Notifications from "expo-notifications";
 import StudentAPI from "../services/api";
 import { APP_CONFIG } from "../config";
 import { useAuth } from "./AuthContext";
@@ -44,6 +45,14 @@ export function NotificationBadgeProvider({
         ).length;
         setUnreadCount(unread);
         console.log("🔢 Unread notifications count:", unread);
+
+        // Update app icon badge to match
+        try {
+          await Notifications.setBadgeCountAsync(unread);
+          console.log("📱 App icon badge set to:", unread);
+        } catch (error) {
+          console.error("❌ Error setting badge count:", error);
+        }
       }
     } catch (error) {
       console.error("❌ Error fetching unread count:", error);
@@ -52,11 +61,21 @@ export function NotificationBadgeProvider({
   }, [user?.id]);
 
   const markAsRead = useCallback((notificationId: string) => {
-    setUnreadCount((prev) => Math.max(0, prev - 1));
+    setUnreadCount((prev) => {
+      const newCount = Math.max(0, prev - 1);
+      // Update app icon badge
+      Notifications.setBadgeCountAsync(newCount).catch(console.error);
+      return newCount;
+    });
   }, []);
 
   const incrementUnread = useCallback(() => {
-    setUnreadCount((prev) => prev + 1);
+    setUnreadCount((prev) => {
+      const newCount = prev + 1;
+      // Update app icon badge
+      Notifications.setBadgeCountAsync(newCount).catch(console.error);
+      return newCount;
+    });
   }, []);
 
   // Refresh count when app gains focus using AppState instead of useFocusEffect

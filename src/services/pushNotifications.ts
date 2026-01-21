@@ -1,7 +1,7 @@
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
-import { Platform } from "react-native";
+import { Platform, Alert } from "react-native";
 import { API_CONFIG } from "../config";
 import StudentAPI from "./api";
 
@@ -26,11 +26,39 @@ export async function registerForPushNotificationsAsync(
   let token: string | null = null;
 
   if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "default",
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#FF231F7C",
+    // Create notification channel with proper configuration
+    try {
+      await Notifications.setNotificationChannelAsync("default", {
+        name: "Limpopo Chefs Academy",
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#014b01",
+        sound: "default",
+        enableVibrate: true,
+        showBadge: true,
+        enableLights: true,
+        lockscreenVisibility:
+          Notifications.AndroidNotificationVisibility.PUBLIC,
+        bypassDnd: false,
+      });
+      console.log("✅ Android notification channel created successfully");
+    } catch (error) {
+      console.error("❌ Error creating notification channel:", error);
+    }
+  }
+
+  if (Platform.OS === "ios") {
+    // Request additional iOS permissions
+    await Notifications.requestPermissionsAsync({
+      ios: {
+        allowAlert: true,
+        allowBadge: true,
+        allowSound: true,
+        allowDisplayInCarPlay: false,
+        allowCriticalAlerts: false,
+        allowProvisional: false,
+        allowAnnouncements: false,
+      },
     });
   }
 
@@ -39,15 +67,26 @@ export async function registerForPushNotificationsAsync(
       await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
+    console.log("📱 Current notification permission status:", existingStatus);
+
     if (existingStatus !== "granted") {
+      console.log("📱 Requesting notification permissions...");
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
+      console.log("📱 Permission request result:", status);
     }
 
     if (finalStatus !== "granted") {
-      console.log("❌ Failed to get push token for push notification!");
+      console.log("❌ Failed to get push token - permission not granted!");
+      Alert.alert(
+        "Notifications Disabled",
+        "Please enable notifications in your phone settings to receive updates.",
+        [{ text: "OK" }]
+      );
       return null;
     }
+
+    console.log("✅ Notification permissions granted");
 
     try {
       const projectId =
@@ -87,29 +126,13 @@ async function sendTokenToBackend(
   try {
     console.log("📤 Sending push token to backend for student:", studentId);
 
-    // Use the existing API infrastructure with failover
-    const response = await fetch(
-      `${API_CONFIG.BASE_URL}/students/${studentId}/push-token`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // TODO: Add authorization header when auth is implemented
-          // 'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ pushToken: token }),
-      }
-    );
+    // Use StudentAPI which handles auth and proper routing
+    const response = await StudentAPI.registerPushToken(studentId, token);
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data?.success) {
-        console.log("✅ Push token registered successfully");
-      } else {
-        console.error("❌ Failed to register push token:", data);
-      }
+    if (response?.success) {
+      console.log("✅ Push token registered successfully");
     } else {
-      console.error("❌ HTTP error registering push token:", response.status);
+      console.error("❌ Failed to register push token:", response);
     }
   } catch (error) {
     console.error("❌ Error registering push token:", error);
