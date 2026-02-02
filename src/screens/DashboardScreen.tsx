@@ -41,7 +41,7 @@ export default function DashboardScreen() {
   const { user, studentProfile, isAuthenticated, refreshStudentProfile } =
     useAuth();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,7 +62,7 @@ export default function DashboardScreen() {
         const apiResponse = await StudentAPI.getStudentProfile(user.id);
         console.log(
           "✅ Dashboard: Profile loaded from API:",
-          JSON.stringify(apiResponse, null, 2)
+          JSON.stringify(apiResponse, null, 2),
         );
 
         if ((apiResponse as any)?.success && (apiResponse as any)?.data) {
@@ -108,7 +108,7 @@ export default function DashboardScreen() {
         const eventsResponse = await StudentAPI.getEvents(user.id);
         console.log(
           "✅ Dashboard: Events response from API:",
-          JSON.stringify(eventsResponse, null, 2)
+          JSON.stringify(eventsResponse, null, 2),
         );
 
         // Extract events array from response - handle different response structures
@@ -124,7 +124,7 @@ export default function DashboardScreen() {
           } else {
             // Try to find an array property in the response
             const possibleArrays = Object.values(response).filter(
-              Array.isArray
+              Array.isArray,
             );
             if (possibleArrays.length > 0) {
               eventsData = possibleArrays[0] as any[];
@@ -133,7 +133,7 @@ export default function DashboardScreen() {
         }
 
         console.log(
-          `✅ Dashboard: Extracted ${eventsData.length} events from response`
+          `✅ Dashboard: Extracted ${eventsData.length} events from response`,
         );
 
         // Filter for today's events only
@@ -147,7 +147,7 @@ export default function DashboardScreen() {
         });
 
         console.log(
-          `📅 Dashboard: Found ${todaysEvents.length} events for today`
+          `📅 Dashboard: Found ${todaysEvents.length} events for today`,
         );
         console.log(`📅 Dashboard: Profile data:`, profile);
 
@@ -159,7 +159,7 @@ export default function DashboardScreen() {
         ) {
           console.log(
             `📅 Dashboard: Filtering by intake group IDs:`,
-            profile.intakeGroupId
+            profile.intakeGroupId,
           );
           todaysEvents = todaysEvents.filter((event: any) => {
             if (!event.assignedToModel || event.assignedToModel.length === 0) {
@@ -168,13 +168,13 @@ export default function DashboardScreen() {
 
             // Check if any of the user's intake group IDs match any of the event's assigned groups
             const hasMatch = profile.intakeGroupId.some((userGroupId: string) =>
-              event.assignedToModel.includes(userGroupId)
+              event.assignedToModel.includes(userGroupId),
             );
 
             return hasMatch;
           });
           console.log(
-            `📅 Dashboard: After intake filter: ${todaysEvents.length} events`
+            `📅 Dashboard: After intake filter: ${todaysEvents.length} events`,
           );
         } else if (
           profile?.intakeGroupId &&
@@ -182,7 +182,7 @@ export default function DashboardScreen() {
         ) {
           // Handle legacy string format
           console.log(
-            `📅 Dashboard: Filtering by intake group ID (string): ${profile.intakeGroupId}`
+            `📅 Dashboard: Filtering by intake group ID (string): ${profile.intakeGroupId}`,
           );
           todaysEvents = todaysEvents.filter((event: any) => {
             if (!event.assignedToModel || event.assignedToModel.length === 0) {
@@ -191,7 +191,7 @@ export default function DashboardScreen() {
             return event.assignedToModel.includes(profile.intakeGroupId);
           });
           console.log(
-            `📅 Dashboard: After intake filter: ${todaysEvents.length} events`
+            `📅 Dashboard: After intake filter: ${todaysEvents.length} events`,
           );
         }
 
@@ -218,7 +218,7 @@ export default function DashboardScreen() {
             );
           });
           console.log(
-            `📅 Dashboard: After campus filter: ${todaysEvents.length} events`
+            `📅 Dashboard: After campus filter: ${todaysEvents.length} events`,
           );
         }
 
@@ -509,32 +509,7 @@ export default function DashboardScreen() {
         </Card.Content>
       </Card>
 
-      {/* Quick Actions */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title>Quick Actions</Title>
-          <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={styles.quickAction}
-              onPress={() =>
-                navigation.navigate("More" as any, { screen: "Downloads" })
-              }
-            >
-              <Ionicons name="download-outline" size={32} color="#014b01" />
-              <Text style={styles.quickActionText}>Downloads</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.quickAction}
-              onPress={() =>
-                navigation.navigate("More" as any, { screen: "Profile" })
-              }
-            >
-              <Ionicons name="person-outline" size={32} color="#014b01" />
-              <Text style={styles.quickActionText}>Profile</Text>
-            </TouchableOpacity>
-          </View>
-        </Card.Content>
-      </Card>
+      {/* Quick Actions removed per request */}
     </ScrollView>
   );
 }

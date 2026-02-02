@@ -77,40 +77,43 @@ export default function DownloadsScreen() {
 
       let downloadUrl: string;
 
-      // If the download already has a fileUrl (from server's downloadUrl field), use it directly
-      if (download.fileUrl && download.fileUrl.includes("amazonaws.com")) {
-        console.log(
-          "📱 Using pre-signed S3 URL from server:",
-          download.fileUrl
-        );
-        downloadUrl = download.fileUrl;
-      } else if (useS3 && download.fileKey) {
-        // Fallback: Use /downloads/file endpoint for S3-based downloads with fileKey
+      console.log("📱 Requesting fresh download URL for:", {
+        id: download.id,
+        title: download.title,
+        hasFileKey: !!download.fileKey,
+        useS3
+      });
+
+      // Always fetch a fresh URL - never use cached fileUrl as it expires
+      if (useS3 && download.fileKey) {
+        // Try using fileKey to get fresh signed URL
+        console.log("📱 Fetching fresh URL with fileKey...");
         downloadUrl = await StudentAPI.downloadFileWithKey(
           download.fileKey,
           download.title
         );
       } else {
-        // Last resort: Use /downloads/{id}/view endpoint for direct viewing
-        downloadUrl = await StudentAPI.downloadFile(download.id);
+        // Use download ID to get fresh signed URL
+        console.log("📱 Fetching fresh URL with download ID...");
+        downloadUrl = await StudentAPI.downloadFile(download.id, download.title);
       }
 
       if (downloadUrl) {
-        console.log("📱 Opening download URL:", downloadUrl);
+        console.log("📱 Opening fresh download URL:", downloadUrl.substring(0, 100) + "...");
         await Linking.openURL(downloadUrl);
       } else {
-        throw new Error("No download URL received");
+        throw new Error("No download URL received from server");
       }
-    } catch (error) {
-      console.error("Error downloading file:", error);
+    } catch (error: any) {
+      console.error("❌ Error downloading file:", error.message || error);
       // Try fallback method if primary fails
       if (useS3) {
-        console.log("S3 download failed, trying direct view method...");
+        console.log("⚠️ S3 download failed, trying direct download method...");
         await handleDownload(download, false);
       } else {
         Alert.alert(
-          "Error",
-          "Failed to download file. Please try again later."
+          "Download Error",
+          "Unable to download the file. The download link may have expired or the file may not be available. Please try refreshing the page or contact support if the problem persists."
         );
       }
     } finally {

@@ -7,8 +7,16 @@ import {
   ScrollView,
   Alert,
   Image,
+  ImageBackground,
 } from "react-native";
-import { Card, TextInput, Button, ActivityIndicator, Text, Title } from "react-native-paper";
+import {
+  Card,
+  TextInput,
+  Button,
+  ActivityIndicator,
+  Text,
+  Title,
+} from "react-native-paper";
 import { useAuth } from "../contexts/AuthContext";
 import images from "../assets/images";
 
@@ -33,7 +41,7 @@ export default function LoginScreen() {
     } catch (error: any) {
       Alert.alert(
         "Login Failed",
-        error.message || "An error occurred during login"
+        error.message || "An error occurred during login",
       );
     } finally {
       setIsLoading(false);
@@ -44,96 +52,111 @@ export default function LoginScreen() {
     Alert.alert(
       "Forgot Password",
       "Please contact the administration office to reset your password.",
-      [{ text: "OK" }]
+      [{ text: "OK" }],
     );
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    <ImageBackground
+      source={require("../../assets/mobile-background.jpeg")}
+      style={styles.backgroundImage}
+      resizeMode="cover"
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require("../assets/images/logo.png")}
-            style={styles.fullLogo}
-            resizeMode="contain"
-          />
-        </View>
-
-        <Card style={styles.loginCard}>
-          <Card.Content>
-            <Title style={styles.loginTitle}>Welcome Back</Title>
-            <TextInput
-              label="Email or Username"
-              value={identifier}
-              onChangeText={setIdentifier}
-              mode="outlined"
-              style={styles.input}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              left={<TextInput.Icon icon="account" />}
-              disabled={isLoading}
+      <View style={styles.overlay} />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require("../assets/images/logo.png")}
+              style={styles.fullLogo}
+              resizeMode="contain"
             />
+          </View>
 
-            <TextInput
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-              mode="outlined"
-              style={styles.input}
-              secureTextEntry={!showPassword}
-              left={<TextInput.Icon icon="lock" />}
-              right={
-                <TextInput.Icon
-                  icon={showPassword ? "eye-off" : "eye"}
-                  onPress={() => setShowPassword(!showPassword)}
-                />
-              }
-              disabled={isLoading}
-            />
+          <Card style={styles.loginCard}>
+            <Card.Content>
+              <Title style={styles.loginTitle}>Welcome Back</Title>
+              <TextInput
+                label="Email or Username"
+                value={identifier}
+                onChangeText={setIdentifier}
+                mode="outlined"
+                style={styles.input}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                left={<TextInput.Icon icon="account" />}
+                disabled={isLoading}
+              />
 
-            <Button
-              mode="contained"
-              onPress={handleLogin}
-              style={styles.loginButton}
-              contentStyle={styles.loginButtonContent}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                "Sign In"
-              )}
-            </Button>
+              <TextInput
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                mode="outlined"
+                style={styles.input}
+                secureTextEntry={!showPassword}
+                left={<TextInput.Icon icon="lock" />}
+                right={
+                  <TextInput.Icon
+                    icon={showPassword ? "eye-off" : "eye"}
+                    onPress={() => setShowPassword(!showPassword)}
+                  />
+                }
+                disabled={isLoading}
+              />
 
-            <Button
-              mode="text"
-              onPress={handleForgotPassword}
-              style={styles.forgotButton}
-              disabled={isLoading}
-            >
-              Forgot Password?
-            </Button>
-          </Card.Content>
-        </Card>
+              <Button
+                mode="contained"
+                onPress={handleLogin}
+                style={styles.loginButton}
+                contentStyle={styles.loginButtonContent}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Need help? Contact the administration office
-          </Text>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+              <Button
+                mode="text"
+                onPress={handleForgotPassword}
+                style={styles.forgotButton}
+                disabled={isLoading}
+              >
+                Forgot Password?
+              </Button>
+            </Card.Content>
+          </Card>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Need help? Contact the administration office
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+  },
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
   },
   scrollContainer: {
     flexGrow: 1,
@@ -154,6 +177,7 @@ const styles = StyleSheet.create({
     elevation: 8,
     borderRadius: 12,
     marginTop: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
   },
   loginTitle: {
     textAlign: "center",
@@ -180,8 +204,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   footerText: {
-    color: "#666",
+    color: "#fff",
     fontSize: 12,
     textAlign: "center",
+    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 });

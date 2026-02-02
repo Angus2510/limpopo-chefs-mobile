@@ -72,24 +72,22 @@ function MoreHomeScreen({ navigation }: any) {
 
         <TouchableOpacity
           style={{
-            backgroundColor: "#D1ffbd",
-            padding: 20,
+            backgroundColor: "white",
+            padding: 15,
             borderRadius: 8,
-            marginBottom: 15,
-            elevation: 3,
+            marginBottom: 10,
+            elevation: 2,
             shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.3,
-            shadowRadius: 3,
-            borderWidth: 2,
-            borderColor: "#014b01",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.2,
+            shadowRadius: 2,
           }}
           onPress={() => {
             console.log("Weekly Calendar button pressed");
             navigation.navigate("WeeklyCalendar");
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "bold", color: "#5a8a4d" }}>
+          <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
             📅 Weekly Schedule
           </Text>
         </TouchableOpacity>

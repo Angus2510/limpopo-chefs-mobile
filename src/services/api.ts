@@ -418,7 +418,7 @@ export class StudentAPI {
             id: item.id || "",
             title: item.title || "Untitled Document",
             description: item.description || "",
-            fileUrl: item.downloadUrl || item.documentUrl || item.fileUrl || "", // Use server's downloadUrl first
+            fileUrl: "", // Don't store expired downloadUrl - fetch fresh one on download
             fileType: fileExtension,
             uploadDate:
               item.uploadDate || item.createdAt || new Date().toISOString(),
@@ -439,37 +439,48 @@ export class StudentAPI {
     });
   }
 
-  // Direct download method using /download endpoint
+  // Direct download method using /download endpoint - requests fresh signed URL
   static async downloadFile(
     downloadId: string,
     fileName?: string
   ): Promise<string> {
     return apiCallWithFailover(async (api) => {
       console.log(
-        "📁 Generating direct download URL for:",
+        "📁 Requesting fresh signed URL for download:",
         downloadId,
         fileName
       );
 
-      // Try to get a signed download URL first
+      // Request a fresh signed URL from the server
       try {
         const response = await api.get(
           `/downloads/${downloadId}/url?download=true`
         );
-        if (response.data.signedUrl) {
-          console.log("✅ Got signed download URL from server");
-          return response.data.signedUrl;
+        
+        console.log("📁 Download URL response:", {
+          hasSignedUrl: !!response.data.signedUrl,
+          hasDownloadUrl: !!response.data.downloadUrl,
+          hasUrl: !!response.data.url,
+          responseKeys: Object.keys(response.data)
+        });
+        
+        // Try different possible response formats
+        const url = response.data.signedUrl || response.data.downloadUrl || response.data.url;
+        
+        if (url) {
+          console.log("✅ Got fresh signed URL from server");
+          return url;
         }
-      } catch (error) {
-        console.log(
-          "⚠️ Signed download URL not available, using direct download URL"
-        );
+        
+        throw new Error("No download URL in server response");
+      } catch (error: any) {
+        console.error("❌ Failed to get signed URL:", error.message);
+        
+        // Fallback: Use direct server endpoint with auth token
+        const downloadUrl = `${api.defaults.baseURL}/downloads/${downloadId}/download`;
+        console.log("⚠️ Using fallback download URL:", downloadUrl);
+        return downloadUrl;
       }
-
-      // Fallback: Return direct download URL with download parameter
-      const downloadUrl = `${api.defaults.baseURL}/downloads/${downloadId}/download`;
-      console.log("✅ Generated direct download URL:", downloadUrl);
-      return downloadUrl;
     });
   }
 

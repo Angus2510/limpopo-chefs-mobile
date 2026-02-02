@@ -38,7 +38,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "assets/IconKitchen-Output/android/play_store_512.png",
+        "foregroundImage": "assets/logo-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.limpopoChefs.mobile",
