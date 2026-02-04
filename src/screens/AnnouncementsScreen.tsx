@@ -37,7 +37,7 @@ export default function AnnouncementsScreen() {
   const loadAnnouncements = async () => {
     if (!isAuthenticated || !user?.id) {
       console.log(
-        "📢 Cannot load announcements - not authenticated or no user ID"
+        "📢 Cannot load announcements - not authenticated or no user ID",
       );
       console.log("📢 Auth state:", { isAuthenticated, userId: user?.id });
       return;
@@ -112,8 +112,8 @@ export default function AnnouncementsScreen() {
         prev.map((announcement) =>
           announcement.id === announcementId
             ? { ...announcement, read: true }
-            : announcement
-        )
+            : announcement,
+        ),
       );
 
       console.log("✅ Marked announcement as read:", announcementId);
@@ -148,14 +148,14 @@ export default function AnnouncementsScreen() {
             try {
               // Mark all unread announcements as read
               const promises = unreadAnnouncements.map((announcement) =>
-                StudentAPI.markAnnouncementAsRead(announcement.id)
+                StudentAPI.markAnnouncementAsRead(announcement.id),
               );
 
               await Promise.all(promises);
 
               // Update local state
               setAnnouncements((prev) =>
-                prev.map((announcement) => ({ ...announcement, read: true }))
+                prev.map((announcement) => ({ ...announcement, read: true })),
               );
 
               console.log("✅ Marked all announcements as read");
@@ -165,7 +165,7 @@ export default function AnnouncementsScreen() {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -386,6 +386,7 @@ const styles = StyleSheet.create({
   announcementsContainer: {
     padding: 16,
     paddingTop: 0,
+    paddingBottom: 100,
   },
   announcementCard: {
     marginBottom: 12,

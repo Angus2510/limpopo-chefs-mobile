@@ -105,29 +105,29 @@ export default function FeesScreen() {
       console.log("📊 Fees: Raw API responses:");
       console.log(
         "  - Payable fees response:",
-        JSON.stringify(payableFeesResponse, null, 2)
+        JSON.stringify(payableFeesResponse, null, 2),
       );
       console.log(
         "  - Transactions response:",
-        JSON.stringify(transactionsResponse, null, 2)
+        JSON.stringify(transactionsResponse, null, 2),
       );
       console.log(
         "  - Balance response:",
-        JSON.stringify(balanceResponse, null, 2)
+        JSON.stringify(balanceResponse, null, 2),
       );
 
       // Handle the new response format with success wrapper
       const processedPayableFees = (payableFeesResponse as any)?.success
         ? (payableFeesResponse as any)?.data?.payableFees || []
         : Array.isArray(payableFeesResponse)
-        ? payableFeesResponse
-        : [];
+          ? payableFeesResponse
+          : [];
 
       const processedTransactions = (transactionsResponse as any)?.success
         ? (transactionsResponse as any)?.data?.transactions || []
         : Array.isArray(transactionsResponse)
-        ? transactionsResponse
-        : [];
+          ? transactionsResponse
+          : [];
 
       const processedBalance = (balanceResponse as any)?.success
         ? (balanceResponse as any)?.data || null
@@ -144,7 +144,7 @@ export default function FeesScreen() {
     } catch (err) {
       console.error("❌ Fees: Failed to load fee data:", err);
       setError(
-        "Failed to load fee information. Please check your connection and try again."
+        "Failed to load fee information. Please check your connection and try again.",
       );
     } finally {
       setIsLoading(false);
@@ -275,17 +275,17 @@ export default function FeesScreen() {
         <Card.Content>
           <Title>Summary</Title>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total Collected:</Text>
+            <Text style={styles.summaryLabel}>Payments Received to Date:</Text>
             <Text style={styles.summaryValue}>
               R{totalCollected.toFixed(2)}
             </Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total Payable:</Text>
+            <Text style={styles.summaryLabel}>Payments Due:</Text>
             <Text style={styles.summaryValue}>R{totalPayable.toFixed(2)}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Net Balance:</Text>
+            <Text style={styles.summaryLabel}>Remaining Balance Owing:</Text>
             <Text
               style={[
                 styles.summaryValue,
@@ -311,37 +311,28 @@ export default function FeesScreen() {
           payableFees.some((fee) => fee.amount > 0) ? (
             <DataTable>
               <DataTable.Header>
-                <DataTable.Title>Fee ID</DataTable.Title>
                 <DataTable.Title numeric>Amount</DataTable.Title>
-                <DataTable.Title numeric>Arrears</DataTable.Title>
-                <DataTable.Title>Status</DataTable.Title>
+                <DataTable.Title>Arrears Status</DataTable.Title>
               </DataTable.Header>
               {payableFees
                 .filter((fee) => fee.amount > 0)
                 .map((fee) => (
                   <DataTable.Row key={fee.id}>
-                    <DataTable.Cell>{fee.id.slice(-8)}</DataTable.Cell>
                     <DataTable.Cell numeric>
                       <Text style={styles.outstandingAmount}>
                         R{fee.amount.toFixed(2)}
                       </Text>
                     </DataTable.Cell>
-                    <DataTable.Cell numeric>
-                      <Text
-                        style={
-                          fee.arrears > 0 ? styles.negative : styles.positive
-                        }
-                      >
-                        R{fee.arrears.toFixed(2)}
-                      </Text>
-                    </DataTable.Cell>
                     <DataTable.Cell>
                       <Text
-                        style={
-                          fee.isOverdue ? styles.negative : styles.positive
-                        }
+                        style={{
+                          color: fee.arrears > 0 ? "#ff4444" : "#44ff44",
+                          fontWeight: "bold",
+                        }}
                       >
-                        {fee.isOverdue ? "Overdue" : "Current"}
+                        {fee.arrears > 0
+                          ? `R${fee.arrears.toFixed(2)} Overdue`
+                          : "Current"}
                       </Text>
                     </DataTable.Cell>
                   </DataTable.Row>
@@ -364,57 +355,44 @@ export default function FeesScreen() {
           <Title>Statement of Account</Title>
           <Paragraph>Transaction History</Paragraph>
           {feeTransactions.length > 0 ? (
-            <DataTable>
-              <DataTable.Header>
-                <DataTable.Title>Date</DataTable.Title>
-                <DataTable.Title>Description</DataTable.Title>
-                <DataTable.Title numeric>Debit</DataTable.Title>
-                <DataTable.Title numeric>Credit</DataTable.Title>
-                <DataTable.Title numeric>Balance</DataTable.Title>
-              </DataTable.Header>
+            <View style={styles.transactionsContainer}>
               {feeTransactions.map((transaction) => (
-                <DataTable.Row key={transaction.id}>
-                  <DataTable.Cell>
-                    {new Date(transaction.transactionDate).toLocaleDateString()}
-                  </DataTable.Cell>
-                  <DataTable.Cell>{transaction.description}</DataTable.Cell>
-                  <DataTable.Cell
-                    numeric
-                    style={
-                      transaction.debit && transaction.debit > 0
-                        ? styles.debit
-                        : undefined
-                    }
-                  >
-                    {transaction.debit && transaction.debit > 0
-                      ? `R${transaction.debit.toFixed(2)}`
-                      : "-"}
-                  </DataTable.Cell>
-                  <DataTable.Cell
-                    numeric
-                    style={
-                      transaction.credit && transaction.credit > 0
-                        ? styles.credit
-                        : undefined
-                    }
-                  >
-                    {transaction.credit && transaction.credit > 0
-                      ? `R${transaction.credit.toFixed(2)}`
-                      : "-"}
-                  </DataTable.Cell>
-                  <DataTable.Cell
-                    numeric
-                    style={
-                      transaction.runningBalance < 0
-                        ? styles.negative
-                        : styles.positive
-                    }
-                  >
-                    R{transaction.runningBalance.toFixed(2)}
-                  </DataTable.Cell>
-                </DataTable.Row>
+                <View key={transaction.id} style={styles.transactionBlock}>
+                  <View style={styles.transactionHeader}>
+                    <Text style={styles.transactionDate}>
+                      {new Date(
+                        transaction.transactionDate,
+                      ).toLocaleDateString()}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.transactionBalance,
+                        transaction.runningBalance < 0
+                          ? styles.negative
+                          : styles.positive,
+                      ]}
+                    >
+                      Balance: R{transaction.runningBalance.toFixed(2)}
+                    </Text>
+                  </View>
+                  <Text style={styles.transactionDescription}>
+                    {transaction.description}
+                  </Text>
+                  <View style={styles.transactionAmounts}>
+                    {transaction.debit && transaction.debit > 0 && (
+                      <Text style={[styles.transactionAmount, styles.debit]}>
+                        Debit: R{transaction.debit.toFixed(2)}
+                      </Text>
+                    )}
+                    {transaction.credit && transaction.credit > 0 && (
+                      <Text style={[styles.transactionAmount, styles.credit]}>
+                        Credit: R{transaction.credit.toFixed(2)}
+                      </Text>
+                    )}
+                  </View>
+                </View>
               ))}
-            </DataTable>
+            </View>
           ) : (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No transactions found</Text>
@@ -525,4 +503,43 @@ const styles = StyleSheet.create({
   positive: {
     color: "#44ff44",
   } as TextStyle,
+  transactionsContainer: {
+    marginTop: 12,
+  },
+  transactionBlock: {
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#014b01",
+  },
+  transactionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  transactionDate: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  transactionBalance: {
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  transactionDescription: {
+    fontSize: 16,
+    color: "#555",
+    marginBottom: 8,
+  },
+  transactionAmounts: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  transactionAmount: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
 });

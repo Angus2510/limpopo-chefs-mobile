@@ -456,9 +456,9 @@ export default function DashboardScreen() {
       </Card>
 
       {/* Announcements */}
-      <Card style={styles.card}>
+      <Card style={[styles.card, styles.lastCard]}>
         <Card.Content>
-          <Title>Announcements</Title>
+          <Title>Notifications</Title>
           {dashboardData.announcements.length > 0 ? (
             dashboardData.announcements.slice(0, 2).map((announcement) => (
               <View
@@ -495,7 +495,7 @@ export default function DashboardScreen() {
               </View>
             ))
           ) : (
-            <Paragraph>No new announcements</Paragraph>
+            <Paragraph>No new notifications</Paragraph>
           )}
           {dashboardData.announcements.length > 0 && (
             <Button
@@ -589,6 +589,9 @@ const styles = StyleSheet.create({
   card: {
     margin: 16,
     elevation: 4,
+  },
+  lastCard: {
+    marginBottom: 80,
   },
   assignmentItem: {
     flexDirection: "row",

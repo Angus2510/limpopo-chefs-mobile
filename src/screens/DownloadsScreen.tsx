@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Linking,
   RefreshControl,
+  Platform,
 } from "react-native";
 import { Card, Title, Paragraph, Chip } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { useAuth } from "../contexts/AuthContext";
 import StudentAPI from "../services/api";
 import { DownloadItem } from "../types";
@@ -22,8 +24,11 @@ export default function DownloadsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
+  const [downloadProgress, setDownloadProgress] = useState<{
+    [key: string]: number;
+  }>({});
 
   useEffect(() => {
     if (isAuthenticated && user?.id) {
@@ -70,10 +75,11 @@ export default function DownloadsScreen() {
 
   const handleDownload = async (
     download: DownloadItem,
-    useS3: boolean = true
+    useS3: boolean = true,
   ) => {
     try {
       setDownloadingFiles((prev) => new Set(prev).add(download.id));
+      setDownloadProgress((prev) => ({ ...prev, [download.id]: 0 }));
 
       let downloadUrl: string;
 
@@ -81,31 +87,90 @@ export default function DownloadsScreen() {
         id: download.id,
         title: download.title,
         hasFileKey: !!download.fileKey,
-        useS3
+        useS3,
       });
 
       // Always fetch a fresh URL - never use cached fileUrl as it expires
       if (useS3 && download.fileKey) {
-        // Try using fileKey to get fresh signed URL
         console.log("📱 Fetching fresh URL with fileKey...");
         downloadUrl = await StudentAPI.downloadFileWithKey(
           download.fileKey,
-          download.title
+          download.title,
         );
       } else {
-        // Use download ID to get fresh signed URL
         console.log("📱 Fetching fresh URL with download ID...");
-        downloadUrl = await StudentAPI.downloadFile(download.id, download.title);
+        downloadUrl = await StudentAPI.downloadFile(
+          download.id,
+          download.title,
+        );
       }
 
-      if (downloadUrl) {
-        console.log("📱 Opening fresh download URL:", downloadUrl.substring(0, 100) + "...");
-        await Linking.openURL(downloadUrl);
-      } else {
+      if (!downloadUrl) {
         throw new Error("No download URL received from server");
+      }
+
+      // Generate safe filename
+      const fileExtension = download.fileType || "pdf";
+      const safeFileName = `${download.title.replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.${fileExtension}`;
+      const fileUri = `${FileSystem.documentDirectory}${safeFileName}`;
+
+      console.log("📥 Downloading file to:", fileUri);
+
+      // Download file with progress tracking
+      const downloadResumable = FileSystem.createDownloadResumable(
+        downloadUrl,
+        fileUri,
+        {},
+        (downloadProgress) => {
+          const progress =
+            downloadProgress.totalBytesWritten /
+            downloadProgress.totalBytesExpectedToWrite;
+          setDownloadProgress((prev) => ({
+            ...prev,
+            [download.id]: Math.round(progress * 100),
+          }));
+        },
+      );
+
+      const result = await downloadResumable.downloadAsync();
+
+      if (result?.uri) {
+        console.log("✅ File downloaded successfully:", result.uri);
+
+        // Clear progress
+        setDownloadProgress((prev) => {
+          const newProgress = { ...prev };
+          delete newProgress[download.id];
+          return newProgress;
+        });
+
+        // Check if sharing is available and share the file
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (isSharingAvailable) {
+          await Sharing.shareAsync(result.uri, {
+            mimeType: getMimeType(download.fileType),
+            dialogTitle: download.title,
+            UTI: `.${download.fileType || "pdf"}`,
+          });
+        } else {
+          Alert.alert(
+            "Download Complete",
+            `File saved to: ${result.uri}\n\nYou can access it from your device's file manager.`,
+          );
+        }
+      } else {
+        throw new Error("Download failed - no file URI returned");
       }
     } catch (error: any) {
       console.error("❌ Error downloading file:", error.message || error);
+
+      // Clear progress on error
+      setDownloadProgress((prev) => {
+        const newProgress = { ...prev };
+        delete newProgress[download.id];
+        return newProgress;
+      });
+
       // Try fallback method if primary fails
       if (useS3) {
         console.log("⚠️ S3 download failed, trying direct download method...");
@@ -113,7 +178,7 @@ export default function DownloadsScreen() {
       } else {
         Alert.alert(
           "Download Error",
-          "Unable to download the file. The download link may have expired or the file may not be available. Please try refreshing the page or contact support if the problem persists."
+          "Unable to download the file. The download link may have expired or the file may not be available. Please try refreshing the page or contact support if the problem persists.",
         );
       }
     } finally {
@@ -123,6 +188,29 @@ export default function DownloadsScreen() {
         return newSet;
       });
     }
+  };
+
+  const getMimeType = (fileType?: string): string => {
+    if (!fileType) return "application/octet-stream";
+
+    const mimeTypes: { [key: string]: string } = {
+      pdf: "application/pdf",
+      doc: "application/msword",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      xls: "application/vnd.ms-excel",
+      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      ppt: "application/vnd.ms-powerpoint",
+      pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      gif: "image/gif",
+      mp4: "video/mp4",
+      mp3: "audio/mpeg",
+      txt: "text/plain",
+    };
+
+    return mimeTypes[fileType.toLowerCase()] || "application/octet-stream";
   };
 
   const formatFileSize = (bytes?: string) => {
@@ -172,6 +260,7 @@ export default function DownloadsScreen() {
 
   const renderDownloadItem = ({ item }: { item: DownloadItem }) => {
     const isDownloading = downloadingFiles.has(item.id);
+    const progress = downloadProgress[item.id] || 0;
 
     return (
       <Card style={styles.downloadCard} key={item.id}>
@@ -199,6 +288,16 @@ export default function DownloadsScreen() {
                     {formatDate(item.uploadDate)}
                   </Text>
                 </View>
+                {isDownloading && progress > 0 && (
+                  <View style={styles.progressContainer}>
+                    <View style={styles.progressBar}>
+                      <View
+                        style={[styles.progressFill, { width: `${progress}%` }]}
+                      />
+                    </View>
+                    <Text style={styles.progressText}>{progress}%</Text>
+                  </View>
+                )}
               </View>
             </View>
             <TouchableOpacity
@@ -359,5 +458,29 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 8,
     paddingHorizontal: 32,
+  },
+  progressContainer: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  progressBar: {
+    flex: 1,
+    height: 6,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 3,
+    overflow: "hidden",
+    marginRight: 8,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#6200EE",
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 12,
+    color: "#6200EE",
+    fontWeight: "600",
+    minWidth: 35,
   },
 });

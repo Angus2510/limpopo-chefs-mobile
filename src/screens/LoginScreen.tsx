@@ -69,11 +69,13 @@ export default function LoginScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.logoContainer}>
-            <Image
-              source={require("../assets/images/logo.png")}
-              style={styles.fullLogo}
-              resizeMode="contain"
-            />
+            <View style={styles.logoBackground}>
+              <Image
+                source={require("../assets/images/logo.png")}
+                style={styles.fullLogo}
+                resizeMode="contain"
+              />
+            </View>
           </View>
 
           <Card style={styles.loginCard}>
@@ -169,8 +171,17 @@ const styles = StyleSheet.create({
     height: 180,
     justifyContent: "center",
   },
+  logoBackground: {
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    borderRadius: 12,
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "80%",
+    height: "100%",
+  },
   fullLogo: {
-    width: "70%",
+    width: "100%",
     height: "100%",
   },
   loginCard: {

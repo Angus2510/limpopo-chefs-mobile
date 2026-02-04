@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "LCA Portal",
+    "name": "Limpopo\n  Chefs",
     "slug": "limpopo-chefs-mobile",
     "version": "1.0.9",
     "description": "The official mobile app for Limpopo Chefs Academy students. Access your academic information, track progress, view announcements, manage attendance, and stay connected with your culinary education journey.",
     "orientation": "portrait",
-    "icon": "assets/logo-icon.png",
+    "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "assets/logo-icon.png",
+      "image": "./assets/app-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -20,7 +20,7 @@
       "requireFullScreen": false,
       "teamId": "YU3WA8Z4R7",
       "infoPlist": {
-        "CFBundleDisplayName": "LCA Portal",
+        "CFBundleDisplayName": "Limpopo\n  Chefs",
         "NSCameraUsageDescription": "This app uses the camera to scan QR codes for attendance tracking.",
         "NSLocationWhenInUseUsageDescription": "This app uses location services to verify attendance location.",
         "ITSAppUsesNonExemptEncryption": false,
@@ -38,7 +38,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "assets/logo-icon.png",
+        "foregroundImage": "./assets/app-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.limpopoChefs.mobile",
