@@ -3,13 +3,26 @@ const fs = require("fs");
 const path = require("path");
 
 // This script creates google-services.json from the EAS Secret during build
-const googleServicesJson = process.env.GOOGLE_SERVICES_JSON;
+const googleServicesPath = process.env.GOOGLE_SERVICES_JSON;
 
-if (googleServicesJson) {
-  const filePath = path.join(__dirname, "..", "google-services.json");
-  console.log("📝 Writing google-services.json from EAS Secret...");
-  fs.writeFileSync(filePath, googleServicesJson);
-  console.log("✅ google-services.json created successfully");
+if (googleServicesPath) {
+  console.log("📝 Reading google-services.json from EAS Secret...");
+  console.log(`Secret file path: ${googleServicesPath}`);
+  
+  try {
+    // Read the content from the secret file path
+    const googleServicesContent = fs.readFileSync(googleServicesPath, 'utf8');
+    
+    // Write to the project root
+    const targetPath = path.join(__dirname, "..", "google-services.json");
+    fs.writeFileSync(targetPath, googleServicesContent);
+    
+    console.log("✅ google-services.json created successfully");
+    console.log(`Written to: ${targetPath}`);
+  } catch (error) {
+    console.error("❌ Error processing google-services.json:", error.message);
+    process.exit(1);
+  }
 } else {
   console.log(
     "ℹ️  GOOGLE_SERVICES_JSON environment variable not found, skipping...",
