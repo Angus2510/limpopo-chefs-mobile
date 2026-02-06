@@ -18,6 +18,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import { Asset } from "expo-asset";
 import {
   SORResult,
   ProcessedResult,
@@ -27,6 +28,7 @@ import {
 } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import StudentAPI from "../services/api";
+import { images } from "../assets/images";
 
 interface SubjectIndexItem {
   number: string;
@@ -86,10 +88,10 @@ export default function SORScreen(): React.JSX.Element {
             // Check if this is because there are no results, or if there are subjects but no results
             if (data.summary?.totalSubjects > 0) {
               console.log(
-                `📚 SOR: Student has ${data.summary.totalSubjects} subjects but no results yet`
+                `📚 SOR: Student has ${data.summary.totalSubjects} subjects but no results yet`,
               );
               setError(
-                `Student has ${data.summary.totalSubjects} subjects enrolled but no assessment results available yet.`
+                `Student has ${data.summary.totalSubjects} subjects enrolled but no assessment results available yet.`,
               );
             } else {
               console.log("📚 SOR: No subjects found for student");
@@ -112,7 +114,7 @@ export default function SORScreen(): React.JSX.Element {
               dateCreated: result.dateTaken || result.dateAssessed || "",
               competency: result.competency === "competent",
               rawData: result,
-            })
+            }),
           );
 
           const resultsData: ResultsData = {
@@ -120,7 +122,7 @@ export default function SORScreen(): React.JSX.Element {
           };
 
           console.log(
-            `✅ SOR: Successfully processed ${transformedResults.length} results`
+            `✅ SOR: Successfully processed ${transformedResults.length} results`,
           );
 
           setResultsData(resultsData);
@@ -184,7 +186,7 @@ export default function SORScreen(): React.JSX.Element {
   // Extract results array and calculate overall outcome
   const results = resultsData?.results || [];
   const overallOutcome = results.some(
-    (result: SORResult) => result.status === "NYC"
+    (result: SORResult) => result.status === "NYC",
   )
     ? "NYC"
     : "C";
@@ -612,7 +614,7 @@ export default function SORScreen(): React.JSX.Element {
       number,
       subject,
       reference,
-    })
+    }),
   );
 
   // Helper to format date
@@ -627,6 +629,30 @@ export default function SORScreen(): React.JSX.Element {
   const handleDownloadPDF = async () => {
     try {
       setDownloading(true);
+
+      // Load logo as base64 for watermark
+      let logoBase64 = "";
+      try {
+        const asset = Asset.fromModule(images.fullLogo);
+        await asset.downloadAsync();
+
+        // Convert to base64
+        const response = await fetch(asset.localUri || asset.uri);
+        const blob = await response.blob();
+        const reader = new FileReader();
+
+        logoBase64 = await new Promise((resolve, reject) => {
+          reader.onloadend = () => {
+            const base64data = reader.result as string;
+            resolve(base64data);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (logoError) {
+        console.warn("Could not load logo for watermark:", logoError);
+        // Continue without watermark if logo fails to load
+      }
 
       const studentNumber =
         studentData?.studentNumber ||
@@ -740,7 +766,7 @@ export default function SORScreen(): React.JSX.Element {
               ${reference.toUpperCase()}
             </td>
           </tr>
-        `
+        `,
         )
         .join("");
 
@@ -774,6 +800,32 @@ export default function SORScreen(): React.JSX.Element {
               padding: 20mm;
               background: white;
               position: relative;
+            }
+            ${
+              logoBase64
+                ? `
+            .page::before {
+              content: "";
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 80%;
+              height: 80%;
+              background-image: url('${logoBase64}');
+              background-repeat: no-repeat;
+              background-position: center;
+              background-size: contain;
+              opacity: 0.08;
+              z-index: 0;
+              pointer-events: none;
+            }
+            .page > * {
+              position: relative;
+              z-index: 1;
+            }
+            `
+                : ""
             }
             .logo {
               text-align: center;
@@ -879,7 +931,7 @@ export default function SORScreen(): React.JSX.Element {
             <div class="detail-row">
               <div class="detail-label">QUALIFICATIONS</div>
               <div class="detail-value">${getQualificationName(
-                qualification
+                qualification,
               ).toUpperCase()}</div>
             </div>
             <div class="detail-row">
@@ -893,7 +945,7 @@ export default function SORScreen(): React.JSX.Element {
             <div class="detail-row">
               <div class="detail-label">DATE OF PRINT</div>
               <div class="detail-value">${formatFullDate(
-                new Date()
+                new Date(),
               ).toUpperCase()}</div>
             </div>
 
@@ -975,6 +1027,7 @@ export default function SORScreen(): React.JSX.Element {
   return (
     <ScrollView
       style={styles.container}
+      contentContainerStyle={styles.scrollContent}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
@@ -1073,6 +1126,21 @@ export default function SORScreen(): React.JSX.Element {
         </Card.Content>
       </Card>
 
+      {/* Download Button - Moved here */}
+      <Card style={styles.card}>
+        <Card.Content>
+          <Button
+            mode="contained"
+            icon={downloading ? "loading" : "download"}
+            style={styles.downloadButton}
+            onPress={handleDownloadPDF}
+            disabled={downloading}
+          >
+            {downloading ? "Generating PDF..." : "Download SOR (PDF)"}
+          </Button>
+        </Card.Content>
+      </Card>
+
       {/* Certification Statement */}
       <Card style={styles.card}>
         <Card.Content>
@@ -1153,7 +1221,7 @@ export default function SORScreen(): React.JSX.Element {
       </Card>
 
       {/* Subject Reference Index */}
-      <Card style={styles.card}>
+      <Card style={styles.lastCard}>
         <Card.Title title="Subject Reference Index" />
         <Card.Content>
           <View style={styles.indexTable}>
@@ -1181,21 +1249,6 @@ export default function SORScreen(): React.JSX.Element {
           </View>
         </Card.Content>
       </Card>
-
-      {/* Download Button */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <Button
-            mode="contained"
-            icon={downloading ? "loading" : "download"}
-            style={styles.downloadButton}
-            onPress={handleDownloadPDF}
-            disabled={downloading}
-          >
-            {downloading ? "Generating PDF..." : "Download SOR (PDF)"}
-          </Button>
-        </Card.Content>
-      </Card>
     </ScrollView>
   );
 }
@@ -1207,6 +1260,9 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 48,
   },
+  scrollContent: {
+    paddingBottom: 100,
+  },
   mainTitle: {
     textAlign: "center",
     marginBottom: 16,
@@ -1215,6 +1271,10 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 16,
+    elevation: 4,
+  },
+  lastCard: {
+    marginBottom: 80,
     elevation: 4,
   },
   detailRow: {

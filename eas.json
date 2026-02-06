@@ -13,7 +13,10 @@
       "ios": {
         "simulator": true
       },
-      "channel": "development"
+      "channel": "development",
+      "env": {
+        "GOOGLE_SERVICES_JSON": "@GOOGLE_SERVICES_JSON"
+      }
     },
     "preview": {
       "distribution": "internal",
@@ -24,7 +27,10 @@
       "ios": {
         "simulator": true
       },
-      "channel": "preview"
+      "channel": "preview",
+      "env": {
+        "GOOGLE_SERVICES_JSON": "@GOOGLE_SERVICES_JSON"
+      }
     },
     "production": {
       "android": {
@@ -34,7 +40,10 @@
       "ios": {
         "distribution": "store"
       },
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "GOOGLE_SERVICES_JSON": "@GOOGLE_SERVICES_JSON"
+      }
     }
   },
   "submit": {
