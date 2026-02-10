@@ -311,22 +311,26 @@ export default function FeesScreen() {
           payableFees.some((fee) => fee.amount > 0) ? (
             <DataTable>
               <DataTable.Header>
-                <DataTable.Title numeric>Amount</DataTable.Title>
-                <DataTable.Title>Arrears Status</DataTable.Title>
+                <DataTable.Title numeric style={styles.dataTableHeaderAmount}>
+                  Amount
+                </DataTable.Title>
+                <DataTable.Title style={styles.dataTableHeaderStatus}>
+                  Arrears Status
+                </DataTable.Title>
               </DataTable.Header>
               {payableFees
                 .filter((fee) => fee.amount > 0)
                 .map((fee) => (
                   <DataTable.Row key={fee.id}>
-                    <DataTable.Cell numeric>
+                    <DataTable.Cell numeric style={styles.dataTableCellAmount}>
                       <Text style={styles.outstandingAmount}>
                         R{fee.amount.toFixed(2)}
                       </Text>
                     </DataTable.Cell>
-                    <DataTable.Cell>
+                    <DataTable.Cell style={styles.dataTableCellStatus}>
                       <Text
                         style={{
-                          color: fee.arrears > 0 ? "#ff4444" : "#44ff44",
+                          color: fee.arrears > 0 ? "#ff4444" : "#2e7d32",
                           fontWeight: "bold",
                         }}
                       >
@@ -446,7 +450,7 @@ const styles = StyleSheet.create({
   },
   paidCard: {
     borderLeftWidth: 4,
-    borderLeftColor: "#44ff44",
+    borderLeftColor: "#2e7d32",
   },
   amount: {
     fontSize: 24,
@@ -458,7 +462,7 @@ const styles = StyleSheet.create({
     color: "#ff4444",
   },
   paidAmount: {
-    color: "#44ff44",
+    color: "#2e7d32",
   },
   dueDate: {
     textAlign: "center",
@@ -495,13 +499,13 @@ const styles = StyleSheet.create({
     color: "#ff4444",
   } as TextStyle,
   credit: {
-    color: "#44ff44",
+    color: "#2e7d32",
   } as TextStyle,
   negative: {
     color: "#ff4444",
   } as TextStyle,
   positive: {
-    color: "#44ff44",
+    color: "#2e7d32",
   } as TextStyle,
   transactionsContainer: {
     marginTop: 12,
@@ -541,5 +545,21 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  dataTableHeaderAmount: {
+    paddingRight: 20,
+    flex: 1,
+  },
+  dataTableHeaderStatus: {
+    paddingLeft: 20,
+    flex: 2,
+  },
+  dataTableCellAmount: {
+    paddingRight: 20,
+    flex: 1,
+  },
+  dataTableCellStatus: {
+    paddingLeft: 20,
+    flex: 2,
   },
 });

@@ -21,7 +21,7 @@ export interface NotificationData {
 }
 
 export async function registerForPushNotificationsAsync(
-  studentId: string
+  studentId: string,
 ): Promise<string | null> {
   let token: string | null = null;
 
@@ -81,7 +81,7 @@ export async function registerForPushNotificationsAsync(
       Alert.alert(
         "Notifications Disabled",
         "Please enable notifications in your phone settings to receive updates.",
-        [{ text: "OK" }]
+        [{ text: "OK" }],
       );
       return null;
     }
@@ -121,16 +121,46 @@ export async function registerForPushNotificationsAsync(
 
 async function sendTokenToBackend(
   studentId: string,
-  token: string
+  token: string,
 ): Promise<void> {
   try {
     console.log("📤 Sending push token to backend for student:", studentId);
 
-    // Use StudentAPI which handles auth and proper routing
-    const response = await StudentAPI.registerPushToken(studentId, token);
+    // Get student profile for better notification targeting
+    let studentProfile = null;
+    try {
+      const profileResponse = await StudentAPI.getProfile(studentId);
+      studentProfile = profileResponse.data;
+      console.log("✅ Got student profile for push token registration:", {
+        campus: studentProfile?.campus,
+        intakeGroupId: studentProfile?.intakeGroupId,
+      });
+    } catch (profileError) {
+      console.warn(
+        "⚠️ Could not fetch student profile for push token:",
+        profileError,
+      );
+    }
+
+    // Send token with profile context for better filtering
+    const tokenData = {
+      pushToken: token,
+      studentProfile: studentProfile
+        ? {
+            campus: studentProfile.campus,
+            intakeGroupId: studentProfile.intakeGroupId,
+          }
+        : null,
+    };
+
+    const response = await StudentAPI.registerPushToken(
+      studentId,
+      token,
+      tokenData,
+    );
 
     if (response?.success) {
-      console.log("✅ Push token registered successfully");
+      console.log("✅ Push token registered successfully with profile context");
     } else {
       console.error("❌ Failed to register push token:", response);
     }
@@ -141,20 +171,20 @@ async function sendTokenToBackend(
 }
 
 export function addNotificationListener(
-  callback: (notification: Notifications.Notification) => void
+  callback: (notification: Notifications.Notification) => void,
 ) {
   return Notifications.addNotificationReceivedListener(callback);
 }
 
 export function addNotificationResponseListener(
-  callback: (response: Notifications.NotificationResponse) => void
+  callback: (response: Notifications.NotificationResponse) => void,
 ) {
   return Notifications.addNotificationResponseReceivedListener(callback);
 }
 
 export async function handleNotificationTap(
   notification: Notifications.Notification,
-  navigation?: any
+  navigation?: any,
 ): Promise<void> {
   const data = notification.request.content.data as unknown as NotificationData;
 

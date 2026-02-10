@@ -18,7 +18,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import StudentAPI from "../services/api";
 import { AttendanceRecord, WELRecord } from "../types";
-import { format, parseISO, isValid } from "date-fns";
+import { format, parseISO, isValid, getMonth, getYear } from "date-fns";
 
 export default function ViewAttendanceScreen() {
   const [attendanceRecords, setAttendanceRecords] = useState<
@@ -41,10 +41,10 @@ export default function ViewAttendanceScreen() {
 
     const totalDays = attendanceRecords.length;
     const presentDays = attendanceRecords.filter(
-      (record) => record.status === "full"
+      (record) => record.status === "full",
     ).length;
     const absentDays = attendanceRecords.filter(
-      (record) => record.status === "absent" || record.status === "sick"
+      (record) => record.status === "absent" || record.status === "sick",
     ).length;
     const percentage = totalDays > 0 ? (presentDays / totalDays) * 100 : 0;
 
@@ -67,12 +67,12 @@ export default function ViewAttendanceScreen() {
         "📅 Fetching attendance for student:",
         studentId,
         "Year:",
-        selectedYear
+        selectedYear,
       );
 
       const response = await StudentAPI.getAttendanceWithWEL(
         studentId,
-        selectedYear
+        selectedYear,
       );
 
       console.log("✅ Attendance data received:", {
@@ -89,7 +89,8 @@ export default function ViewAttendanceScreen() {
       console.error("❌ Failed to fetch attendance:", error);
       Alert.alert(
         "Error",
-        error.message || "Failed to fetch attendance records. Please try again."
+        error.message ||
+          "Failed to fetch attendance records. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -142,6 +143,62 @@ export default function ViewAttendanceScreen() {
       return timeString;
     }
   };
+
+  // Group attendance records by month
+  const groupAttendanceByMonth = () => {
+    const grouped: { [key: string]: AttendanceRecord[] } = {};
+
+    attendanceRecords.forEach((record) => {
+      try {
+        const date = parseISO(record.date);
+        if (isValid(date)) {
+          const monthKey = format(date, "MMMM yyyy"); // e.g., "January 2024"
+          if (!grouped[monthKey]) {
+            grouped[monthKey] = [];
+          }
+          grouped[monthKey].push(record);
+        }
+      } catch {
+        // If date parsing fails, put in "Other" category
+        if (!grouped["Other"]) {
+          grouped["Other"] = [];
+        }
+        grouped["Other"].push(record);
+      }
+    });
+
+    // Sort months chronologically
+    const sortedKeys = Object.keys(grouped).sort((a, b) => {
+      if (a === "Other") return 1;
+      if (b === "Other") return -1;
+
+      try {
+        const dateA = parseISO(`${a.split(" ")[1]}-${a.split(" ")[0]}-01`);
+        const dateB = parseISO(`${b.split(" ")[1]}-${b.split(" ")[0]}-01`);
+        return dateB.getTime() - dateA.getTime(); // Most recent first
+      } catch {
+        return 0;
+      }
+    });
+
+    const sortedGrouped: { [key: string]: AttendanceRecord[] } = {};
+    sortedKeys.forEach((key) => {
+      // Sort records within each month by date (most recent first)
+      sortedGrouped[key] = grouped[key].sort((a, b) => {
+        try {
+          const dateA = parseISO(a.date);
+          const dateB = parseISO(b.date);
+          return dateB.getTime() - dateA.getTime();
+        } catch {
+          return 0;
+        }
+      });
+    });
+
+    return sortedGrouped;
+  };
+
+  const groupedAttendance = groupAttendanceByMonth();
 
   const changeYear = (increment: number) => {
     setSelectedYear((prev) => prev + increment);
@@ -261,44 +318,60 @@ export default function ViewAttendanceScreen() {
           </Card>
         )}
 
-        {/* Attendance Records */}
+        {/* Monthly Attendance Records */}
         <Card style={styles.card}>
           <Card.Content>
-            <Title style={styles.sectionTitle}>Daily Attendance</Title>
+            <Title style={styles.sectionTitle}>Monthly Attendance</Title>
             {attendanceRecords.length === 0 ? (
               <Text style={styles.emptyText}>
                 No attendance records found for {selectedYear}
               </Text>
             ) : (
-              attendanceRecords.map((record) => (
-                <Surface key={record.id} style={styles.attendanceRecord}>
-                  <View style={styles.recordHeader}>
-                    <View style={styles.recordLeft}>
-                      <Text style={styles.recordDate}>
-                        {formatDate(record.date)}
-                      </Text>
-                      {(record.outcome?.title || record.outcomeTitle) && (
-                        <Text style={styles.activityText}>
-                          {record.outcome?.title || record.outcomeTitle}
+              Object.entries(groupedAttendance).map(([month, records]) => (
+                <View key={month} style={styles.monthSection}>
+                  <Text style={styles.monthTitle}>{month}</Text>
+                  <Text style={styles.monthSummary}>
+                    {records.length} day{records.length !== 1 ? "s" : ""} •{" "}
+                    {records.filter((r) => r.status === "full").length} present
+                    •{" "}
+                    {
+                      records.filter(
+                        (r) => r.status === "absent" || r.status === "sick",
+                      ).length
+                    }{" "}
+                    absent
+                  </Text>
+                  {records.map((record) => (
+                    <Surface key={record.id} style={styles.attendanceRecord}>
+                      <View style={styles.recordHeader}>
+                        <View style={styles.recordLeft}>
+                          <Text style={styles.recordDate}>
+                            {formatDate(record.date)}
+                          </Text>
+                          {(record.outcome?.title || record.outcomeTitle) && (
+                            <Text style={styles.activityText}>
+                              {record.outcome?.title || record.outcomeTitle}
+                            </Text>
+                          )}
+                        </View>
+                        <Chip
+                          style={[
+                            styles.statusChip,
+                            { backgroundColor: getStatusColor(record.status) },
+                          ]}
+                          textStyle={styles.statusText}
+                        >
+                          {record.status.toUpperCase()}
+                        </Chip>
+                      </View>
+                      {record.timeCheckedIn && (
+                        <Text style={styles.timeText}>
+                          Check-in: {formatTime(record.timeCheckedIn)}
                         </Text>
                       )}
-                    </View>
-                    <Chip
-                      style={[
-                        styles.statusChip,
-                        { backgroundColor: getStatusColor(record.status) },
-                      ]}
-                      textStyle={styles.statusText}
-                    >
-                      {record.status.toUpperCase()}
-                    </Chip>
-                  </View>
-                  {record.timeCheckedIn && (
-                    <Text style={styles.timeText}>
-                      Check-in: {formatTime(record.timeCheckedIn)}
-                    </Text>
-                  )}
-                </Surface>
+                    </Surface>
+                  ))}
+                </View>
               ))
             )}
           </Card.Content>
@@ -443,6 +516,24 @@ const styles = StyleSheet.create({
     color: "#666",
     fontStyle: "italic",
     padding: 20,
+  },
+  monthSection: {
+    marginBottom: 24,
+  },
+  monthTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#2196F3",
+    marginBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E3F2FD",
+    paddingBottom: 4,
+  },
+  monthSummary: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 12,
+    fontStyle: "italic",
   },
   errorText: {
     marginTop: 16,

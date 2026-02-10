@@ -43,7 +43,7 @@ const apiCallWithFailover = async (apiCall: (api: any) => Promise<any>) => {
   } catch (error: any) {
     console.warn(
       "⚠️ Primary API failed, trying fallback...",
-      error?.message || "Unknown error"
+      error?.message || "Unknown error",
     );
     lastError = error;
   }
@@ -70,7 +70,7 @@ const setupInterceptors = (api: any) => {
       }
       return config;
     },
-    (error: any) => Promise.reject(error)
+    (error: any) => Promise.reject(error),
   );
 
   // Response interceptor
@@ -97,7 +97,7 @@ const setupInterceptors = (api: any) => {
 
       console.error("API Error:", error.response?.data || error.message);
       return Promise.reject(error);
-    }
+    },
   );
 };
 
@@ -118,7 +118,7 @@ export class StudentAPI {
   static async getEvents(
     studentId: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ): Promise<any[]> {
     return apiCallWithFailover(async (api) => {
       let url = `/students/${studentId}/events`;
@@ -147,7 +147,7 @@ export class StudentAPI {
 
   static async submitAssignment(
     assignmentId: string,
-    formData: FormData
+    formData: FormData,
   ): Promise<void> {
     return apiCallWithFailover(async (api) => {
       await api.post(`/assignments/${assignmentId}/submit`, formData, {
@@ -163,7 +163,7 @@ export class StudentAPI {
     studentId: string,
     startDate?: string,
     endDate?: string,
-    year?: number
+    year?: number,
   ): Promise<AttendanceRecord[]> {
     return apiCallWithFailover(async (api) => {
       let url = `/students/${studentId}/attendance`;
@@ -195,7 +195,7 @@ export class StudentAPI {
         return response.data.data.attendance;
       } else {
         throw new Error(
-          response.data.error || "Failed to fetch attendance records"
+          response.data.error || "Failed to fetch attendance records",
         );
       }
     });
@@ -204,7 +204,7 @@ export class StudentAPI {
   // New method to get detailed attendance data with WEL records
   static async getAttendanceWithWEL(
     studentId: string,
-    year?: number
+    year?: number,
   ): Promise<{
     attendance: AttendanceRecord[];
     welRecords: any[];
@@ -256,7 +256,7 @@ export class StudentAPI {
             error: response.data.error,
           });
           throw new Error(
-            response.data.error || "Failed to fetch attendance records"
+            response.data.error || "Failed to fetch attendance records",
           );
         }
       } catch (error: any) {
@@ -274,7 +274,7 @@ export class StudentAPI {
 
   static async scanAttendance(
     qrCodeData: string,
-    studentId: string
+    studentId: string,
   ): Promise<any> {
     return apiCallWithFailover(async (api) => {
       // Parse the QR code data (assuming it's JSON string)
@@ -351,7 +351,7 @@ export class StudentAPI {
   static async getFeeTransactions(studentId: string): Promise<any[]> {
     return apiCallWithFailover(async (api) => {
       const response = await api.get(
-        `/students/${studentId}/fees/transactions`
+        `/students/${studentId}/fees/transactions`,
       );
       return response.data;
     });
@@ -367,7 +367,7 @@ export class StudentAPI {
   static async payFee(
     studentId: string,
     feeId: string,
-    paymentMethod: string
+    paymentMethod: string,
   ): Promise<void> {
     return apiCallWithFailover(async (api) => {
       await api.post(`/students/${studentId}/fees/payment`, {
@@ -401,7 +401,7 @@ export class StudentAPI {
         rawDownloads = response.data.data;
       } else {
         console.warn(
-          "⚠️ Unexpected downloads response format, returning empty array"
+          "⚠️ Unexpected downloads response format, returning empty array",
         );
         return [];
       }
@@ -425,7 +425,7 @@ export class StudentAPI {
             category: item.category || "Learning Materials",
             fileKey: item.fileKey || item.filePath || item.documentUrl || "",
           };
-        }
+        },
       );
 
       console.log("📁 Transformed downloads:", {
@@ -442,40 +442,43 @@ export class StudentAPI {
   // Direct download method using /download endpoint - requests fresh signed URL
   static async downloadFile(
     downloadId: string,
-    fileName?: string
+    fileName?: string,
   ): Promise<string> {
     return apiCallWithFailover(async (api) => {
       console.log(
         "📁 Requesting fresh signed URL for download:",
         downloadId,
-        fileName
+        fileName,
       );
 
       // Request a fresh signed URL from the server
       try {
         const response = await api.get(
-          `/downloads/${downloadId}/url?download=true`
+          `/downloads/${downloadId}/url?download=true`,
         );
-        
+
         console.log("📁 Download URL response:", {
           hasSignedUrl: !!response.data.signedUrl,
           hasDownloadUrl: !!response.data.downloadUrl,
           hasUrl: !!response.data.url,
-          responseKeys: Object.keys(response.data)
+          responseKeys: Object.keys(response.data),
         });
-        
+
         // Try different possible response formats
-        const url = response.data.signedUrl || response.data.downloadUrl || response.data.url;
-        
+        const url =
+          response.data.signedUrl ||
+          response.data.downloadUrl ||
+          response.data.url;
+
         if (url) {
           console.log("✅ Got fresh signed URL from server");
           return url;
         }
-        
+
         throw new Error("No download URL in server response");
       } catch (error: any) {
         console.error("❌ Failed to get signed URL:", error.message);
-        
+
         // Fallback: Use direct server endpoint with auth token
         const downloadUrl = `${api.defaults.baseURL}/downloads/${downloadId}/download`;
         console.log("⚠️ Using fallback download URL:", downloadUrl);
@@ -487,7 +490,7 @@ export class StudentAPI {
   // New download method using /file endpoint with fileKey and fileName for direct downloads
   static async downloadFileWithKey(
     fileKey: string,
-    fileName?: string
+    fileName?: string,
   ): Promise<string> {
     return apiCallWithFailover(async (api) => {
       console.log("� Creating direct download with fileKey:", {
@@ -499,7 +502,7 @@ export class StudentAPI {
       const downloadUrl = `${
         api.defaults.baseURL
       }/downloads/file?fileKey=${encodeURIComponent(
-        fileKey
+        fileKey,
       )}&fileName=${encodeURIComponent(fileName || "download")}&download=true`;
       console.log("✅ Generated direct download URL:", downloadUrl);
       return downloadUrl;
@@ -516,7 +519,7 @@ export class StudentAPI {
 
   static async updateStudentProfile(
     studentId: string,
-    profileData: Partial<Student>
+    profileData: Partial<Student>,
   ): Promise<Student> {
     return apiCallWithFailover(async (api) => {
       const response = await api.put(`/students/${studentId}`, profileData);
@@ -547,7 +550,7 @@ export class StudentAPI {
   }
 
   static async getStudentCompetencies(
-    studentId: string
+    studentId: string,
   ): Promise<CompetencyRecord[]> {
     return apiCallWithFailover(async (api) => {
       const response = await api.get(`/students/${studentId}/competencies`);
@@ -557,13 +560,13 @@ export class StudentAPI {
 
   // Try to get results directly from the working competencies endpoint but with detailed data
   static async getStudentResultsDetailed(
-    studentId: string
+    studentId: string,
   ): Promise<CompetenciesResponse> {
     console.log(
-      `🔍 API: Calling competencies endpoint for student ${studentId}`
+      `🔍 API: Calling competencies endpoint for student ${studentId}`,
     );
     console.log(
-      `🔍 API: Full URL will be: ${API_CONFIG.BASE_URL}/students/${studentId}/competencies`
+      `🔍 API: Full URL will be: ${API_CONFIG.BASE_URL}/students/${studentId}/competencies`,
     );
 
     return apiCallWithFailover(async (api) => {
@@ -607,7 +610,7 @@ export class StudentAPI {
     studentId: string,
     locationId: string,
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<WELPlacement> {
     return apiCallWithFailover(async (api) => {
       const response = await api.post(`/students/${studentId}/wel/placements`, {
@@ -630,7 +633,7 @@ export class StudentAPI {
         // If student-specific endpoint doesn't exist, try general announcements endpoint
         if (error.response?.status === 404) {
           console.log(
-            "📢 Student-specific announcements endpoint not found, trying general announcements"
+            "📢 Student-specific announcements endpoint not found, trying general announcements",
           );
           try {
             const generalResponse = await api.get("/announcements");
@@ -639,7 +642,7 @@ export class StudentAPI {
             // If both endpoints fail, return mock data for now
             if (generalError.response?.status === 404) {
               console.log(
-                "📢 No announcements endpoints available, returning sample data"
+                "📢 No announcements endpoints available, returning sample data",
               );
               return [
                 {
@@ -689,12 +692,12 @@ export class StudentAPI {
   static async getMobileNotifications(
     studentId: string,
     page: number = 1,
-    limit: number = 20
+    limit: number = 20,
   ): Promise<any> {
     return apiCallWithFailover(async (api) => {
       try {
         const response = await api.get(
-          `/students/${studentId}/notifications?page=${page}&limit=${limit}`
+          `/students/${studentId}/notifications?page=${page}&limit=${limit}`,
         );
         return response.data;
       } catch (error: any) {
@@ -715,7 +718,7 @@ export class StudentAPI {
 
   static async markMobileNotificationAsRead(
     studentId: string,
-    notificationId: string
+    notificationId: string,
   ): Promise<void> {
     return apiCallWithFailover(async (api) => {
       try {
@@ -725,7 +728,7 @@ export class StudentAPI {
       } catch (error: any) {
         if (error.response?.status === 404) {
           console.log(
-            "📱 Mark mobile notification as read endpoint not available yet"
+            "📱 Mark mobile notification as read endpoint not available yet",
           );
           return;
         }
@@ -736,12 +739,14 @@ export class StudentAPI {
 
   static async registerPushToken(
     studentId: string,
-    pushToken: string
+    pushToken: string,
+    additionalData: any = {},
   ): Promise<any> {
     return apiCallWithFailover(async (api) => {
       try {
         const response = await api.post(`/students/${studentId}/push-token`, {
           pushToken,
+          ...additionalData,
         });
         return response.data;
       } catch (error: any) {

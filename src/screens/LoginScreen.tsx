@@ -167,17 +167,20 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: "center",
-    marginBottom: 5,
+    marginBottom: 0,
     height: 180,
     justifyContent: "center",
   },
   logoBackground: {
     backgroundColor: "rgba(255, 255, 255, 0.8)",
-    borderRadius: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     padding: 20,
     alignItems: "center",
     justifyContent: "center",
-    width: "80%",
+    width: "100%",
     height: "100%",
   },
   fullLogo: {
@@ -186,8 +189,11 @@ const styles = StyleSheet.create({
   },
   loginCard: {
     elevation: 8,
-    borderRadius: 12,
-    marginTop: 10,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    marginTop: 0,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
   },
   loginTitle: {

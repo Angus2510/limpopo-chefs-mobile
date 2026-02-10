@@ -136,14 +136,52 @@ export default function DashboardScreen() {
           `✅ Dashboard: Extracted ${eventsData.length} events from response`,
         );
 
-        // Filter for today's events only
+        // Filter for today's events only using the same logic as WeeklyCalendarScreen
         const today = new Date();
-        const todayStr = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
 
         let todaysEvents = eventsData.filter((event: any) => {
-          const eventDate = new Date(event.startDate || event.date);
-          const eventDateStr = eventDate.toISOString().split("T")[0];
-          return eventDateStr === todayStr;
+          try {
+            // Extract date parts directly from the string to avoid timezone conversion
+            let eventDateString = event.startDate || event.date;
+            
+            // Handle different date formats from server
+            if (eventDateString.includes('T')) {
+              eventDateString = eventDateString.split('T')[0]; // Get "2026-02-11" part
+            }
+            
+            // Parse date components manually to avoid timezone issues
+            const [eventYear, eventMonth, eventDay] = eventDateString.split('-').map(Number);
+            
+            // Create a date object from the parsed components and add 1 day to compensate for server timezone issue
+            const eventDate = new Date(eventYear, eventMonth - 1, eventDay); // month is 0-indexed in Date constructor
+            eventDate.setDate(eventDate.getDate() + 1); // Add 1 day to compensate for server timezone shift
+            
+            // Get adjusted event date components
+            const adjustedYear = eventDate.getFullYear();
+            const adjustedMonth = eventDate.getMonth() + 1; // Convert back to 1-12
+            const adjustedDay = eventDate.getDate();
+            
+            // Get local date components
+            const localYear = today.getFullYear();
+            const localMonth = today.getMonth() + 1; // getMonth() returns 0-11, but we want 1-12
+            const localDay = today.getDate();
+
+            const matches = adjustedYear === localYear && adjustedMonth === localMonth && adjustedDay === localDay;
+
+            if (matches) {
+              console.log("📅 Dashboard: Event matches today's date:", {
+                eventTitle: event.title,
+                originalEventDate: eventDateString,
+                adjustedEventDate: eventDate.toDateString(),
+                todayDate: today.toDateString(),
+              });
+            }
+
+            return matches;
+          } catch (error) {
+            console.error("❌ Dashboard: Error parsing event date:", event.startDate || event.date, error);
+            return false;
+          }
         });
 
         console.log(
@@ -151,49 +189,54 @@ export default function DashboardScreen() {
         );
         console.log(`📅 Dashboard: Profile data:`, profile);
 
-        // Filter by user's intake group if available
-        if (
-          profile?.intakeGroupId &&
-          Array.isArray(profile.intakeGroupId) &&
-          profile.intakeGroupId.length > 0
-        ) {
-          console.log(
-            `📅 Dashboard: Filtering by intake group IDs:`,
-            profile.intakeGroupId,
-          );
-          todaysEvents = todaysEvents.filter((event: any) => {
-            if (!event.assignedToModel || event.assignedToModel.length === 0) {
-              return true; // Show events with no specific assignment
+        // Apply the same filtering logic as WeeklyCalendarScreen for student-specific events
+        todaysEvents = todaysEvents.filter((event: any) => {
+          // Check if the student is individually assigned to this event
+          if (event.assignedToStudents && Array.isArray(event.assignedToStudents)) {
+            const isIndividuallyAssigned = event.assignedToStudents.includes(user.id);
+            if (isIndividuallyAssigned) {
+              console.log(`📅 Dashboard: Event "${event.title}" individually assigned to user`);
+              return true;
             }
+          }
 
-            // Check if any of the user's intake group IDs match any of the event's assigned groups
-            const hasMatch = profile.intakeGroupId.some((userGroupId: string) =>
-              event.assignedToModel.includes(userGroupId),
-            );
-
-            return hasMatch;
-          });
-          console.log(
-            `📅 Dashboard: After intake filter: ${todaysEvents.length} events`,
-          );
-        } else if (
-          profile?.intakeGroupId &&
-          typeof profile.intakeGroupId === "string"
-        ) {
-          // Handle legacy string format
-          console.log(
-            `📅 Dashboard: Filtering by intake group ID (string): ${profile.intakeGroupId}`,
-          );
-          todaysEvents = todaysEvents.filter((event: any) => {
-            if (!event.assignedToModel || event.assignedToModel.length === 0) {
-              return true; // Show events with no specific assignment
+          // Check if the event is assigned to the user's intake group
+          if (event.assignedToModel && Array.isArray(event.assignedToModel) && event.assignedToModel.length > 0) {
+            // Handle case where user has multiple intake group IDs (array)
+            if (profile?.intakeGroupId && Array.isArray(profile.intakeGroupId) && profile.intakeGroupId.length > 0) {
+              const hasGroupMatch = profile.intakeGroupId.some((userGroupId: string) =>
+                event.assignedToModel.includes(userGroupId)
+              );
+              if (hasGroupMatch) {
+                console.log(`📅 Dashboard: Event "${event.title}" assigned to user's intake group (array)`);
+                return true;
+              }
             }
-            return event.assignedToModel.includes(profile.intakeGroupId);
-          });
-          console.log(
-            `📅 Dashboard: After intake filter: ${todaysEvents.length} events`,
-          );
-        }
+            // Handle case where user has single intake group ID (string)
+            else if (profile?.intakeGroupId && typeof profile.intakeGroupId === "string") {
+              const hasGroupMatch = event.assignedToModel.includes(profile.intakeGroupId);
+              if (hasGroupMatch) {
+                console.log(`📅 Dashboard: Event "${event.title}" assigned to user's intake group (string)`);
+                return true;
+              }
+            }
+          }
+
+          // If event has no assignments at all (legacy events), show them
+          if ((!event.assignedToModel || event.assignedToModel.length === 0) && 
+              (!event.assignedToStudents || event.assignedToStudents.length === 0)) {
+            console.log(`📅 Dashboard: Event "${event.title}" has no assignments (legacy)`);
+            return true;
+          }
+
+          // Event is assigned but user is not included
+          console.log(`📅 Dashboard: Event "${event.title}" filtered out - user not assigned`);
+          return false;
+        });
+
+        console.log(
+          `📅 Dashboard: After assignment filtering: ${todaysEvents.length} events`
+        );
 
         // Filter by campus if available
         if (profile?.campus) {
@@ -383,13 +426,17 @@ export default function DashboardScreen() {
           </Text>
           <Text style={styles.statLabel}>Daily Roster</Text>
         </View>
-        <View style={styles.statCard}>
+        <TouchableOpacity
+          style={styles.statCard}
+          onPress={() => navigation.navigate("More" as any, { screen: "Fees" })}
+          activeOpacity={0.7}
+        >
           <Ionicons name="cash" size={24} color="#ff6b6b" />
           <Text style={styles.statNumber}>
             {dashboardData.pendingFees.length}
           </Text>
           <Text style={styles.statLabel}>Pending Fees</Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Daily Roster */}
@@ -422,7 +469,7 @@ export default function DashboardScreen() {
               navigation.navigate("More" as any, { screen: "WeeklyCalendar" })
             }
           >
-            View Weekly Schedule
+            View Weekly Roster
           </Button>
         </Card.Content>
       </Card>

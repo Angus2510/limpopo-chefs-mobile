@@ -69,7 +69,7 @@ export default function NotificationsScreen({
           setHighlightedNotificationId(null);
         }, 3000);
       }
-    }, [route?.params])
+    }, [route?.params]),
   );
 
   const fetchNotifications = async (reset = false) => {
@@ -85,25 +85,120 @@ export default function NotificationsScreen({
       setLoading(reset);
 
       console.log(
-        `📱 NotificationsScreen: Fetching notifications for user ${studentId}, page ${currentPage}`
+        `📱 NotificationsScreen: Fetching notifications for user ${studentId}, page ${currentPage}`,
       );
+
+      // Get user profile for client-side filtering
+      let userProfile = null;
+      try {
+        const profileResponse = await StudentAPI.getProfile(studentId);
+        userProfile = profileResponse.data;
+      } catch (profileError) {
+        console.warn(
+          "⚠️ Could not fetch user profile for notification filtering:",
+          profileError,
+        );
+      }
 
       const response = await StudentAPI.getMobileNotifications(
         studentId,
         currentPage,
-        20
+        20,
       );
 
       console.log(
         `📱 NotificationsScreen: Response received:`,
-        JSON.stringify(response, null, 2)
+        JSON.stringify(response, null, 2),
       );
 
       if (response.success && response.data) {
-        const newNotifications = response.data.notifications || [];
+        let newNotifications = response.data.notifications || [];
+
+        // Client-side filtering as additional safety measure
+        if (userProfile) {
+          const beforeFilter = newNotifications.length;
+          newNotifications = newNotifications.filter((notification: any) => {
+            // Check if notification has targeting information
+            if (
+              notification.assignedToStudents ||
+              notification.assignedToModel ||
+              notification.campus
+            ) {
+              // Check individual student assignment
+              if (
+                notification.assignedToStudents &&
+                Array.isArray(notification.assignedToStudents)
+              ) {
+                if (notification.assignedToStudents.includes(studentId)) {
+                  console.log(
+                    `📱 Notification "${notification.title}" individually assigned to user`,
+                  );
+                  return true;
+                }
+              }
+
+              // Check intake group assignment
+              if (
+                notification.assignedToModel &&
+                Array.isArray(notification.assignedToModel)
+              ) {
+                const userGroups = Array.isArray(userProfile.intakeGroupId)
+                  ? userProfile.intakeGroupId
+                  : [userProfile.intakeGroupId].filter(Boolean);
+
+                const hasGroupMatch = userGroups.some((groupId: string) =>
+                  notification.assignedToModel.includes(groupId),
+                );
+
+                if (hasGroupMatch) {
+                  console.log(
+                    `📱 Notification "${notification.title}" assigned to user's intake group`,
+                  );
+                  return true;
+                }
+              }
+
+              // Check campus assignment
+              if (notification.campus && userProfile.campus) {
+                const userCampus = userProfile.campus
+                  .toLowerCase()
+                  .replace(/[^a-z]/g, "");
+                const notificationCampus = notification.campus
+                  .toLowerCase()
+                  .replace(/[^a-z]/g, "");
+
+                if (
+                  userCampus === notificationCampus ||
+                  userCampus.includes(notificationCampus) ||
+                  notificationCampus.includes(userCampus)
+                ) {
+                  console.log(
+                    `📱 Notification "${notification.title}" matches user's campus`,
+                  );
+                  return true;
+                }
+              }
+
+              // If notification has targeting but user doesn't match, filter it out
+              console.log(
+                `📱 Notification "${notification.title}" filtered out - not assigned to user`,
+              );
+              return false;
+            }
+
+            // Keep notifications with no targeting (legacy or general notifications)
+            return true;
+          });
+
+          if (beforeFilter !== newNotifications.length) {
+            console.log(
+              `📱 Filtered notifications: ${beforeFilter} -> ${newNotifications.length}`,
+            );
+          }
+        }
 
         console.log(
-          `📱 NotificationsScreen: Found ${newNotifications.length} notifications`
+          `📱 NotificationsScreen: Found ${newNotifications.length} notifications after filtering`,
         );
 
         if (reset) {
@@ -120,18 +215,18 @@ export default function NotificationsScreen({
       } else {
         console.log(
           "❌ NotificationsScreen: Invalid response structure:",
-          response
+          response,
         );
         Alert.alert("Error", "Invalid response format from server");
       }
     } catch (error: any) {
       console.error(
         "❌ NotificationsScreen: Error fetching notifications:",
-        error
+        error,
       );
       Alert.alert(
         "Error",
-        `Failed to fetch notifications: ${error.message || "Unknown error"}`
+        `Failed to fetch notifications: ${error.message || "Unknown error"}`,
       );
     } finally {
       setLoading(false);
@@ -165,7 +260,7 @@ export default function NotificationsScreen({
 
       // Update local state
       setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
+        prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n)),
       );
 
       // Update badge count

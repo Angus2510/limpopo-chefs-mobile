@@ -88,7 +88,7 @@ function MoreHomeScreen({ navigation }: any) {
           }}
         >
           <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
-            📅 Weekly Schedule
+            📅 Weekly Roster
           </Text>
         </TouchableOpacity>
 
@@ -268,7 +268,7 @@ function MoreStackNavigator() {
       <MoreStack.Screen
         name="WeeklyCalendar"
         component={WeeklyCalendarScreen}
-        options={{ title: "Weekly Schedule" }}
+        options={{ title: "Weekly Roster" }}
       />
       <MoreStack.Screen
         name="Notifications"
@@ -417,7 +417,7 @@ function MainStackNavigator() {
       <Stack.Screen
         name="WeeklyCalendar"
         component={WeeklyCalendarScreen}
-        options={{ title: "Weekly Schedule" }}
+        options={{ title: "Weekly Roster" }}
       />
 
       <Stack.Screen
@@ -443,7 +443,7 @@ export default function AppNavigator() {
   // Show loading screen while checking authentication
   if (isLoading) {
     console.log("📱 Showing loading screen...");
-    return <LoadingScreen message="Checking authentication..." />;
+    return <LoadingScreen message="SHAPING PEOPLE'S FUTURE" />;
   }
 
   // Show login screen if not authenticated

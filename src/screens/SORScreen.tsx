@@ -636,22 +636,35 @@ export default function SORScreen(): React.JSX.Element {
         const asset = Asset.fromModule(images.fullLogo);
         await asset.downloadAsync();
 
-        // Convert to base64
+        // Use fetch to get the asset and convert to base64
         const response = await fetch(asset.localUri || asset.uri);
-        const blob = await response.blob();
-        const reader = new FileReader();
-
-        logoBase64 = await new Promise((resolve, reject) => {
-          reader.onloadend = () => {
-            const base64data = reader.result as string;
-            resolve(base64data);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
+        const buffer = await response.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        
+        // Convert to base64
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64String = btoa(binary);
+        logoBase64 = `data:image/png;base64,${base64String}`;
+        
+        console.log("✅ SOR: Logo loaded for watermark successfully");
       } catch (logoError) {
-        console.warn("Could not load logo for watermark:", logoError);
-        // Continue without watermark if logo fails to load
+        console.warn("⚠️ SOR: Could not load logo for watermark:", logoError);
+        // Try fallback method
+        try {
+          const asset = Asset.fromModule(images.fullLogo);
+          await asset.downloadAsync();
+          
+          if (asset.localUri) {
+            logoBase64 = asset.localUri;
+            console.log("✅ SOR: Using local URI as fallback for watermark");
+          }
+        } catch (fallbackError) {
+          console.warn("⚠️ SOR: Fallback watermark method also failed:", fallbackError);
+          // Continue without watermark if all methods fail
+        }
       }
 
       const studentNumber =
@@ -810,13 +823,13 @@ export default function SORScreen(): React.JSX.Element {
               top: 50%;
               left: 50%;
               transform: translate(-50%, -50%);
-              width: 80%;
-              height: 80%;
+              width: 70%;
+              height: 70%;
               background-image: url('${logoBase64}');
               background-repeat: no-repeat;
               background-position: center;
               background-size: contain;
-              opacity: 0.08;
+              opacity: 0.1;
               z-index: 0;
               pointer-events: none;
             }
@@ -825,7 +838,13 @@ export default function SORScreen(): React.JSX.Element {
               z-index: 1;
             }
             `
-                : ""
+                : `
+            /* No watermark available */
+            .page > * {
+              position: relative;
+              z-index: 1;
+            }
+            `
             }
             .logo {
               text-align: center;

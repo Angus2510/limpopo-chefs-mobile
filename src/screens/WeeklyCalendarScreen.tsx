@@ -85,7 +85,7 @@ export default function WeeklyCalendarScreen() {
         const eventsResponse = await StudentAPI.getEvents(user.id);
         console.log(
           "✅ WeeklyCalendar: Events response from API:",
-          JSON.stringify(eventsResponse, null, 2)
+          JSON.stringify(eventsResponse, null, 2),
         );
 
         // Extract events array from response - handle different response structures
@@ -101,7 +101,7 @@ export default function WeeklyCalendarScreen() {
           } else {
             // Try to find an array property in the response
             const possibleArrays = Object.values(response).filter(
-              Array.isArray
+              Array.isArray,
             );
             if (possibleArrays.length > 0) {
               eventsData = possibleArrays[0] as any[];
@@ -110,73 +110,104 @@ export default function WeeklyCalendarScreen() {
         }
 
         console.log(
-          `✅ WeeklyCalendar: Extracted ${eventsData.length} events from response`
+          `✅ WeeklyCalendar: Extracted ${eventsData.length} events from response`,
         );
 
         // Filter events for current user's intake group and campus if available
         let filteredEvents = Array.isArray(eventsData) ? eventsData : [];
 
         console.log(
-          `📅 WeeklyCalendar: Starting with ${filteredEvents.length} events`
+          `📅 WeeklyCalendar: Starting with ${filteredEvents.length} events`,
         );
         console.log(
           "📅 WeeklyCalendar: User profile:",
-          JSON.stringify(profile, null, 2)
+          JSON.stringify(profile, null, 2),
         );
 
-        // Filter by user's intake group if available
-        if (
-          profile?.intakeGroupId &&
-          Array.isArray(profile.intakeGroupId) &&
-          profile.intakeGroupId.length > 0
-        ) {
-          console.log(
-            `📅 WeeklyCalendar: Filtering by intake group IDs:`,
-            profile.intakeGroupId
-          );
-
-          filteredEvents = filteredEvents.filter((event: any) => {
-            if (!event.assignedToModel || event.assignedToModel.length === 0) {
-              return true; // Show events with no specific assignment
-            }
-
-            // Check if any of the user's intake group IDs match any of the event's assigned groups
-            const hasMatch = profile.intakeGroupId.some((userGroupId: string) =>
-              event.assignedToModel.includes(userGroupId)
+        // Filter by user's intake group and individual assignments
+        filteredEvents = filteredEvents.filter((event: any) => {
+          // Check if the student is individually assigned to this event
+          if (
+            event.assignedToStudents &&
+            Array.isArray(event.assignedToStudents)
+          ) {
+            const isIndividuallyAssigned = event.assignedToStudents.includes(
+              user.id,
             );
-
-            return hasMatch;
-          });
-
-          console.log(
-            `📅 WeeklyCalendar: After intake group filtering: ${filteredEvents.length} events`
-          );
-        } else if (
-          profile?.intakeGroupId &&
-          typeof profile.intakeGroupId === "string"
-        ) {
-          // Handle case where intakeGroupId is a string
-          console.log(
-            `📅 WeeklyCalendar: Filtering by intake group ID (string):`,
-            profile.intakeGroupId
-          );
-
-          filteredEvents = filteredEvents.filter((event: any) => {
-            if (!event.assignedToModel || event.assignedToModel.length === 0) {
-              return true; // Show events with no specific assignment
+            if (isIndividuallyAssigned) {
+              console.log(
+                `📅 WeeklyCalendar: Event "${event.title}" individually assigned to user`,
+              );
+              return true;
             }
-            return event.assignedToModel.includes(profile.intakeGroupId);
-          });
+          }
 
+          // Check if the event is assigned to the user's intake group
+          if (
+            event.assignedToModel &&
+            Array.isArray(event.assignedToModel) &&
+            event.assignedToModel.length > 0
+          ) {
+            // Handle case where user has multiple intake group IDs (array)
+            if (
+              profile?.intakeGroupId &&
+              Array.isArray(profile.intakeGroupId) &&
+              profile.intakeGroupId.length > 0
+            ) {
+              const hasGroupMatch = profile.intakeGroupId.some(
+                (userGroupId: string) =>
+                  event.assignedToModel.includes(userGroupId),
+              );
+              if (hasGroupMatch) {
+                console.log(
+                  `📅 WeeklyCalendar: Event "${event.title}" assigned to user's intake group (array)`,
+                );
+                return true;
+              }
+            }
+            // Handle case where user has single intake group ID (string)
+            else if (
+              profile?.intakeGroupId &&
+              typeof profile.intakeGroupId === "string"
+            ) {
+              const hasGroupMatch = event.assignedToModel.includes(
+                profile.intakeGroupId,
+              );
+              if (hasGroupMatch) {
+                console.log(
+                  `📅 WeeklyCalendar: Event "${event.title}" assigned to user's intake group (string)`,
+                );
+                return true;
+              }
+            }
+          }
+
+          // If event has no assignments at all (legacy events), show them
+          if (
+            (!event.assignedToModel || event.assignedToModel.length === 0) &&
+            (!event.assignedToStudents || event.assignedToStudents.length === 0)
+          ) {
+            console.log(
+              `📅 WeeklyCalendar: Event "${event.title}" has no assignments (legacy)`,
+            );
+            return true;
+          }
+
+          // Event is assigned but user is not included
           console.log(
-            `📅 WeeklyCalendar: After intake group filtering: ${filteredEvents.length} events`
+            `📅 WeeklyCalendar: Event "${event.title}" filtered out - user not assigned`,
           );
-        }
+          return false;
+        });
+
+        console.log(
+          `📅 WeeklyCalendar: After intake group and individual assignment filtering: ${filteredEvents.length} events`,
+        );
 
         // Filter by campus if available
         if (profile?.campus) {
           console.log(
-            `📅 WeeklyCalendar: Filtering by campus: ${profile.campus}`
+            `📅 WeeklyCalendar: Filtering by campus: ${profile.campus}`,
           );
           filteredEvents = filteredEvents.filter((event: any) => {
             if (!event.campus || event.campus === "") {
@@ -198,12 +229,12 @@ export default function WeeklyCalendarScreen() {
             );
           });
           console.log(
-            `📅 WeeklyCalendar: After campus filtering: ${filteredEvents.length} events`
+            `📅 WeeklyCalendar: After campus filtering: ${filteredEvents.length} events`,
           );
         }
 
         console.log(
-          `📅 WeeklyCalendar: Final filtered events: ${filteredEvents.length}`
+          `📅 WeeklyCalendar: Final filtered events: ${filteredEvents.length}`,
         );
 
         setEvents(filteredEvents);
@@ -225,17 +256,57 @@ export default function WeeklyCalendarScreen() {
   const getEventsForDate = (date: Date) => {
     return events
       .filter((event) => {
-        // Parse the server date and extract just the date part to avoid timezone issues
-        const eventDateString = event.startDate.split("T")[0]; // Get "2025-10-29" part
-        const localDateString = format(date, "yyyy-MM-dd");
+        try {
+          // Extract date parts directly from the string to avoid timezone conversion
+          let eventDateString = event.startDate;
 
-        console.log("🗓️ Comparing dates:", {
-          eventDateString,
-          localDateString,
-          match: eventDateString === localDateString,
-        });
+          // Handle different date formats from server
+          if (eventDateString.includes("T")) {
+            eventDateString = eventDateString.split("T")[0]; // Get "2026-02-11" part
+          }
 
-        return eventDateString === localDateString;
+          // Parse date components manually to avoid timezone issues
+          const [eventYear, eventMonth, eventDay] = eventDateString
+            .split("-")
+            .map(Number);
+
+          // Create a date object from the parsed components and add 1 day to compensate for server timezone issue
+          const eventDate = new Date(eventYear, eventMonth - 1, eventDay); // month is 0-indexed in Date constructor
+          eventDate.setDate(eventDate.getDate() + 1); // Add 1 day to compensate for server timezone shift
+
+          // Get adjusted event date components
+          const adjustedYear = eventDate.getFullYear();
+          const adjustedMonth = eventDate.getMonth() + 1; // Convert back to 1-12
+          const adjustedDay = eventDate.getDate();
+
+          // Get local date components
+          const localYear = date.getFullYear();
+          const localMonth = date.getMonth() + 1; // getMonth() returns 0-11, but we want 1-12
+          const localDay = date.getDate();
+
+          const matches =
+            adjustedYear === localYear &&
+            adjustedMonth === localMonth &&
+            adjustedDay === localDay;
+
+          console.log("🗓️ Comparing dates:", {
+            originalEventDate: eventDateString,
+            adjustedEventDate: eventDate.toDateString(),
+            adjustedYear,
+            adjustedMonth,
+            adjustedDay,
+            localYear,
+            localMonth,
+            localDay,
+            localDate: date.toDateString(),
+            match: matches,
+          });
+
+          return matches;
+        } catch (error) {
+          console.error("❌ Error parsing event date:", event.startDate, error);
+          return false;
+        }
       })
       .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
   };
@@ -369,7 +440,7 @@ export default function WeeklyCalendarScreen() {
                     ))}
                   </View>
                 ) : (
-                  <Text style={styles.noEventsText}>No events scheduled</Text>
+                  <Text style={styles.noEventsText}>No events on roster</Text>
                 )}
               </View>
             </Card>
