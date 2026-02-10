@@ -143,30 +143,35 @@ export default function DashboardScreen() {
           try {
             // Extract date parts directly from the string to avoid timezone conversion
             let eventDateString = event.startDate || event.date;
-            
+
             // Handle different date formats from server
-            if (eventDateString.includes('T')) {
-              eventDateString = eventDateString.split('T')[0]; // Get "2026-02-11" part
+            if (eventDateString.includes("T")) {
+              eventDateString = eventDateString.split("T")[0]; // Get "2026-02-11" part
             }
-            
+
             // Parse date components manually to avoid timezone issues
-            const [eventYear, eventMonth, eventDay] = eventDateString.split('-').map(Number);
-            
+            const [eventYear, eventMonth, eventDay] = eventDateString
+              .split("-")
+              .map(Number);
+
             // Create a date object from the parsed components and add 1 day to compensate for server timezone issue
             const eventDate = new Date(eventYear, eventMonth - 1, eventDay); // month is 0-indexed in Date constructor
             eventDate.setDate(eventDate.getDate() + 1); // Add 1 day to compensate for server timezone shift
-            
+
             // Get adjusted event date components
             const adjustedYear = eventDate.getFullYear();
             const adjustedMonth = eventDate.getMonth() + 1; // Convert back to 1-12
             const adjustedDay = eventDate.getDate();
-            
+
             // Get local date components
             const localYear = today.getFullYear();
             const localMonth = today.getMonth() + 1; // getMonth() returns 0-11, but we want 1-12
             const localDay = today.getDate();
 
-            const matches = adjustedYear === localYear && adjustedMonth === localMonth && adjustedDay === localDay;
+            const matches =
+              adjustedYear === localYear &&
+              adjustedMonth === localMonth &&
+              adjustedDay === localDay;
 
             if (matches) {
               console.log("📅 Dashboard: Event matches today's date:", {
@@ -179,7 +184,11 @@ export default function DashboardScreen() {
 
             return matches;
           } catch (error) {
-            console.error("❌ Dashboard: Error parsing event date:", event.startDate || event.date, error);
+            console.error(
+              "❌ Dashboard: Error parsing event date:",
+              event.startDate || event.date,
+              error,
+            );
             return false;
           }
         });
@@ -192,50 +201,81 @@ export default function DashboardScreen() {
         // Apply the same filtering logic as WeeklyCalendarScreen for student-specific events
         todaysEvents = todaysEvents.filter((event: any) => {
           // Check if the student is individually assigned to this event
-          if (event.assignedToStudents && Array.isArray(event.assignedToStudents)) {
-            const isIndividuallyAssigned = event.assignedToStudents.includes(user.id);
+          if (
+            event.assignedToStudents &&
+            Array.isArray(event.assignedToStudents)
+          ) {
+            const isIndividuallyAssigned = event.assignedToStudents.includes(
+              user.id,
+            );
             if (isIndividuallyAssigned) {
-              console.log(`📅 Dashboard: Event "${event.title}" individually assigned to user`);
+              console.log(
+                `📅 Dashboard: Event "${event.title}" individually assigned to user`,
+              );
               return true;
             }
           }
 
           // Check if the event is assigned to the user's intake group
-          if (event.assignedToModel && Array.isArray(event.assignedToModel) && event.assignedToModel.length > 0) {
+          if (
+            event.assignedToModel &&
+            Array.isArray(event.assignedToModel) &&
+            event.assignedToModel.length > 0
+          ) {
             // Handle case where user has multiple intake group IDs (array)
-            if (profile?.intakeGroupId && Array.isArray(profile.intakeGroupId) && profile.intakeGroupId.length > 0) {
-              const hasGroupMatch = profile.intakeGroupId.some((userGroupId: string) =>
-                event.assignedToModel.includes(userGroupId)
+            if (
+              profile?.intakeGroupId &&
+              Array.isArray(profile.intakeGroupId) &&
+              profile.intakeGroupId.length > 0
+            ) {
+              const hasGroupMatch = profile.intakeGroupId.some(
+                (userGroupId: string) =>
+                  event.assignedToModel.includes(userGroupId),
               );
               if (hasGroupMatch) {
-                console.log(`📅 Dashboard: Event "${event.title}" assigned to user's intake group (array)`);
+                console.log(
+                  `📅 Dashboard: Event "${event.title}" assigned to user's intake group (array)`,
+                );
                 return true;
               }
             }
             // Handle case where user has single intake group ID (string)
-            else if (profile?.intakeGroupId && typeof profile.intakeGroupId === "string") {
-              const hasGroupMatch = event.assignedToModel.includes(profile.intakeGroupId);
+            else if (
+              profile?.intakeGroupId &&
+              typeof profile.intakeGroupId === "string"
+            ) {
+              const hasGroupMatch = event.assignedToModel.includes(
+                profile.intakeGroupId,
+              );
               if (hasGroupMatch) {
-                console.log(`📅 Dashboard: Event "${event.title}" assigned to user's intake group (string)`);
+                console.log(
+                  `📅 Dashboard: Event "${event.title}" assigned to user's intake group (string)`,
+                );
                 return true;
               }
             }
           }
 
           // If event has no assignments at all (legacy events), show them
-          if ((!event.assignedToModel || event.assignedToModel.length === 0) && 
-              (!event.assignedToStudents || event.assignedToStudents.length === 0)) {
-            console.log(`📅 Dashboard: Event "${event.title}" has no assignments (legacy)`);
+          if (
+            (!event.assignedToModel || event.assignedToModel.length === 0) &&
+            (!event.assignedToStudents || event.assignedToStudents.length === 0)
+          ) {
+            console.log(
+              `📅 Dashboard: Event "${event.title}" has no assignments (legacy)`,
+            );
             return true;
           }
 
           // Event is assigned but user is not included
-          console.log(`📅 Dashboard: Event "${event.title}" filtered out - user not assigned`);
+          console.log(
+            `📅 Dashboard: Event "${event.title}" filtered out - user not assigned`,
+          );
           return false;
         });
 
         console.log(
-          `📅 Dashboard: After assignment filtering: ${todaysEvents.length} events`
+          `📅 Dashboard: After assignment filtering: ${todaysEvents.length} events`,
         );
 
         // Filter by campus if available

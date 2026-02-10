@@ -640,15 +640,15 @@ export default function SORScreen(): React.JSX.Element {
         const response = await fetch(asset.localUri || asset.uri);
         const buffer = await response.arrayBuffer();
         const bytes = new Uint8Array(buffer);
-        
+
         // Convert to base64
-        let binary = '';
+        let binary = "";
         for (let i = 0; i < bytes.byteLength; i++) {
           binary += String.fromCharCode(bytes[i]);
         }
         const base64String = btoa(binary);
         logoBase64 = `data:image/png;base64,${base64String}`;
-        
+
         console.log("✅ SOR: Logo loaded for watermark successfully");
       } catch (logoError) {
         console.warn("⚠️ SOR: Could not load logo for watermark:", logoError);
@@ -656,13 +656,16 @@ export default function SORScreen(): React.JSX.Element {
         try {
           const asset = Asset.fromModule(images.fullLogo);
           await asset.downloadAsync();
-          
+
           if (asset.localUri) {
             logoBase64 = asset.localUri;
             console.log("✅ SOR: Using local URI as fallback for watermark");
           }
         } catch (fallbackError) {
-          console.warn("⚠️ SOR: Fallback watermark method also failed:", fallbackError);
+          console.warn(
+            "⚠️ SOR: Fallback watermark method also failed:",
+            fallbackError,
+          );
           // Continue without watermark if all methods fail
         }
       }
