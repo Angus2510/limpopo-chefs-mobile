@@ -443,7 +443,7 @@ export default function AppNavigator() {
   // Show loading screen while checking authentication
   if (isLoading) {
     console.log("📱 Showing loading screen...");
-    return <LoadingScreen message="SHAPING PEOPLE'S FUTURE" />;
+    return <LoadingScreen />;
   }
 
   // Show login screen if not authenticated

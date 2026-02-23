@@ -29,7 +29,7 @@ export default function LoadingScreen({
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Shaping people's future</Text>
+        <Text style={styles.footerText}>SHAPING PEOPLE'S FUTURE</Text>
       </View>
     </View>
   );

@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Limpopo\n  Chefs",
+    "name": "LCA+",
     "slug": "limpopo-chefs-mobile",
-    "version": "1.0.9",
+    "version": "1.0.10",
     "description": "The official mobile app for Limpopo Chefs Academy students. Access your academic information, track progress, view announcements, manage attendance, and stay connected with your culinary education journey.",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
@@ -16,11 +16,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.limpopoChefs.mobile",
       "userInterfaceStyle": "light",
-      "buildNumber": "13",
+      "buildNumber": "16",
       "requireFullScreen": false,
       "teamId": "YU3WA8Z4R7",
       "infoPlist": {
-        "CFBundleDisplayName": "Limpopo\n  Chefs",
+        "CFBundleDisplayName": "LCA+",
         "NSCameraUsageDescription": "This app uses the camera to scan QR codes for attendance tracking.",
         "NSLocationWhenInUseUsageDescription": "This app uses location services to verify attendance location.",
         "ITSAppUsesNonExemptEncryption": false,

@@ -58,7 +58,7 @@ export default function LoginScreen() {
 
   return (
     <ImageBackground
-      source={require("../../assets/mobile-background.jpeg")}
+      source={require("../../assets/mobile-students.jpeg")}
       style={styles.backgroundImage}
       resizeMode="cover"
     >
@@ -133,14 +133,12 @@ export default function LoginScreen() {
               >
                 Forgot Password?
               </Button>
+
+              <Text style={styles.footerText}>
+                Need help? Contact the administration office
+              </Text>
             </Card.Content>
           </Card>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Need help? Contact the administration office
-            </Text>
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </ImageBackground>
@@ -155,7 +153,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    backgroundColor: "rgba(0, 0, 0, 0.15)",
   },
   container: {
     flex: 1,
@@ -194,7 +192,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
     marginTop: 0,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
   },
   loginTitle: {
     textAlign: "center",
@@ -216,16 +214,10 @@ const styles = StyleSheet.create({
   forgotButton: {
     marginTop: 8,
   },
-  footer: {
-    marginTop: 10,
-    alignItems: "center",
-  },
   footerText: {
-    color: "#fff",
+    color: "#666",
     fontSize: 12,
     textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    marginTop: 16,
   },
 });
