@@ -24,6 +24,7 @@ import { useNavigation } from "@react-navigation/native";
 import StudentAPI from "../services/api";
 import { Student } from "../types";
 import { useAuth } from "../contexts/AuthContext";
+import { getQualificationName } from "../utils/qualification";
 
 interface StudentProfile {
   id: string;
@@ -77,12 +78,12 @@ export default function ProfileScreen() {
 
     if (isAuthenticated && user) {
       console.log(
-        "✅ ProfileScreen: User is authenticated, loading profile data"
+        "✅ ProfileScreen: User is authenticated, loading profile data",
       );
       loadProfileData();
     } else {
       console.log(
-        "❌ ProfileScreen: User not authenticated or user data missing"
+        "❌ ProfileScreen: User not authenticated or user data missing",
       );
     }
   }, [isAuthenticated, user]);
@@ -118,12 +119,12 @@ export default function ProfileScreen() {
       try {
         console.log(
           "🔍 ProfileScreen: Calling getStudentProfile with ID:",
-          user.id
+          user.id,
         );
         const apiResponse = await StudentAPI.getStudentProfile(user.id);
         console.log(
           "✅ ProfileScreen: Profile loaded from API:",
-          JSON.stringify(apiResponse, null, 2)
+          JSON.stringify(apiResponse, null, 2),
         );
 
         // Extract data from the nested API response structure
@@ -140,7 +141,9 @@ export default function ProfileScreen() {
             email: studentData.email || user?.email || "",
             studentNumber:
               studentData.admissionNumber || studentData.username || user.id,
-            course: studentData.qualificationTitle || "Not enrolled",
+            course: getQualificationName(
+              studentData.intakeGroupTitle || studentData.qualificationTitle,
+            ),
             year: 1,
             enrollmentDate: studentData.profile?.admissionDate
               ? new Date(studentData.profile.admissionDate)
@@ -177,13 +180,13 @@ export default function ProfileScreen() {
         }
       } catch (error) {
         console.log(
-          "⚠️ ProfileScreen: Profile API failed, using basic user data"
+          "⚠️ ProfileScreen: Profile API failed, using basic user data",
         );
         console.log("⚠️ ProfileScreen: Error:", error);
       }
 
       console.log(
-        "🔧 ProfileScreen: Using centralized profile from AuthContext"
+        "🔧 ProfileScreen: Using centralized profile from AuthContext",
       );
 
       // Load additional data based on active tab
@@ -261,7 +264,7 @@ export default function ProfileScreen() {
 
     console.log(
       "🔍 ProfileScreen: renderStudentHeader - studentProfile:",
-      JSON.stringify(studentProfile, null, 2)
+      JSON.stringify(studentProfile, null, 2),
     );
 
     // Handle the nested data structure from API
@@ -325,7 +328,9 @@ export default function ProfileScreen() {
 
             {student.qualificationTitle && (
               <Text style={styles.intakeGroup}>
-                {student.qualificationTitle}
+                {getQualificationName(
+                  student.intakeGroupTitle || student.qualificationTitle,
+                )}
               </Text>
             )}
           </View>
@@ -383,7 +388,9 @@ export default function ProfileScreen() {
             <View style={styles.infoRow}>
               <Text style={styles.label}>Qualification:</Text>
               <Text style={styles.value}>
-                {student.qualificationTitle || "Not enrolled"}
+                {getQualificationName(
+                  student.intakeGroupTitle || student.qualificationTitle,
+                )}
               </Text>
             </View>
             {student.campusTitle && (
@@ -500,7 +507,7 @@ export default function ProfileScreen() {
   const renderTabContent = () => {
     console.log(
       "🔍 ProfileScreen: renderTabContent called for tab:",
-      activeTab
+      activeTab,
     );
 
     if (isLoading && !studentProfile) {

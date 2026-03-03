@@ -39,13 +39,13 @@ export default function WELScreen() {
 
   const loadWELData = async () => {
     if (!isAuthenticated || !user?.id) {
-      console.log("❌ WEL: No authenticated user");
+      console.log("❌ W.E.L: No authenticated user");
       setLoading(false);
       return;
     }
 
     try {
-      console.log("🔍 WEL: Loading data for user:", user.id);
+      console.log("🔍 W.E.L: Loading data for user:", user.id);
 
       // Load student profile for intake group info
       let profile = null;
@@ -59,17 +59,17 @@ export default function WELScreen() {
           };
         }
       } catch (error) {
-        console.log("⚠️ WEL: Profile API failed");
+        console.log("⚠️ W.E.L: Profile API failed");
       }
 
       setStudentProfile(profile);
 
-      // Load WEL hours data (contains both hours summary and placements)
+      // Load W.E.L hours data (contains both hours summary and placements)
       const hoursResponse = await StudentAPI.getWELHours(user.id);
 
       console.log(
-        "✅ WEL: Hours data:",
-        JSON.stringify(hoursResponse, null, 2)
+        "✅ W.E.L: Hours data:",
+        JSON.stringify(hoursResponse, null, 2),
       );
 
       // Determine max hours based on intake group
@@ -102,8 +102,8 @@ export default function WELScreen() {
         placements: placements || [],
       });
     } catch (error) {
-      console.error("❌ WEL: Error loading data:", error);
-      Alert.alert("Error", "Failed to load WEL data");
+      console.error("❌ W.E.L: Error loading data:", error);
+      Alert.alert("Error", "Failed to load W.E.L data");
 
       // Fallback to basic data structure
       const maxHours = getWelMaxHoursForIntake(studentProfile?.intakeGroup);
@@ -183,7 +183,7 @@ export default function WELScreen() {
         <Card.Content>
           <View style={styles.header}>
             <Ionicons name="business" size={24} color="#014b01" />
-            <Title style={styles.title}>WEL Hours</Title>
+            <Title style={styles.title}>W.E.L Hours</Title>
           </View>
 
           <View style={styles.progressContainer}>
@@ -242,10 +242,10 @@ export default function WELScreen() {
         </Card.Content>
       </Card>
 
-      {/* WEL Placements List */}
+      {/* W.E.L Placements List */}
       <Card style={styles.card}>
         <Card.Content>
-          <Title>WEL Placements</Title>
+          <Title>W.E.L Placements</Title>
           {welData?.placements && welData.placements.length > 0 ? (
             welData.placements.map((placement: any) => (
               <View key={placement.id} style={styles.recordItem}>
@@ -270,7 +270,7 @@ export default function WELScreen() {
               </View>
             ))
           ) : (
-            <Paragraph>No WEL placements found</Paragraph>
+            <Paragraph>No W.E.L placements found</Paragraph>
           )}
         </Card.Content>
       </Card>

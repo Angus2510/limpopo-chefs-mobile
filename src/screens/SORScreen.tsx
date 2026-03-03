@@ -29,6 +29,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import StudentAPI from "../services/api";
 import { images } from "../assets/images";
+import { getQualificationName } from "../utils/qualification";
 
 interface SubjectIndexItem {
   number: string;
@@ -190,6 +191,14 @@ export default function SORScreen(): React.JSX.Element {
   )
     ? "NYC"
     : "C";
+
+  // Qualification value for render
+  const qualification =
+    studentData?.intakeGroupTitle ||
+    studentProfile?.student?.intakeGroupTitle ||
+    studentProfile?.course ||
+    studentData?.qualificationTitle ||
+    "Not enrolled";
 
   if (loading) {
     return (
@@ -700,7 +709,8 @@ export default function SORScreen(): React.JSX.Element {
         studentData?.intakeGroupTitle ||
         studentProfile?.student?.intakeGroupTitle ||
         studentProfile?.course ||
-        "City & Guilds Award: Introduction to the Hospitality Industry";
+        studentData?.qualificationTitle ||
+        "Not enrolled";
 
       // Helper function to get proper qualification name
       const getQualificationName = (intakeTitle: string) => {
@@ -952,9 +962,7 @@ export default function SORScreen(): React.JSX.Element {
             </div>
             <div class="detail-row">
               <div class="detail-label">QUALIFICATIONS</div>
-              <div class="detail-value">${getQualificationName(
-                qualification,
-              ).toUpperCase()}</div>
+              <div class="detail-value">{getQualificationName(qualification).toUpperCase()}</div>
             </div>
             <div class="detail-row">
               <div class="detail-label">SCHOOL NAME</div>
@@ -1110,12 +1118,7 @@ export default function SORScreen(): React.JSX.Element {
           <View style={styles.detailRow}>
             <Text style={styles.label}>Qualification:</Text>
             <Text style={styles.value}>
-              {(
-                studentData?.intakeGroupTitle ||
-                studentProfile?.student?.intakeGroupTitle ||
-                studentProfile?.course ||
-                "City & Guilds Award: Introduction to the Hospitality Industry"
-              ).toUpperCase()}
+              {getQualificationName(qualification)}
             </Text>
           </View>
           <View style={styles.detailRow}>

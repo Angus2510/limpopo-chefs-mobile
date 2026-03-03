@@ -43,6 +43,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuthStatus();
   }, []);
 
+  // Periodic token refresh - check every 30 minutes
+  useEffect(() => {
+    if (!user) return;
+
+    console.log("⏰ Setting up periodic token refresh (every 30 minutes)");
+
+    // Check immediately
+    AuthService.ensureTokenFresh();
+
+    // Then check every 30 minutes
+    const interval = setInterval(
+      () => {
+        console.log("⏰ Periodic token refresh check...");
+        AuthService.ensureTokenFresh();
+      },
+      30 * 60 * 1000,
+    ); // 30 minutes
+
+    return () => {
+      console.log("⏰ Clearing periodic token refresh");
+      clearInterval(interval);
+    };
+  }, [user]);
+
   const checkAuthStatus = async () => {
     try {
       console.log("🔐 AuthContext: Starting auto-login check...");
@@ -54,7 +78,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (userData) {
         console.log(
           "✅ AuthContext: Auto-login successful for user:",
-          userData.id
+          userData.id,
         );
         console.log("✅ AuthContext: User will stay logged in");
         setUser(userData);
@@ -62,7 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Load student profile data
         try {
           const profileResponse = await StudentAPI.getStudentProfile(
-            userData.id
+            userData.id,
           );
           const profileData = (profileResponse as any)?.success
             ? (profileResponse as any).data
@@ -72,7 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } catch (profileError) {
           console.log(
             "⚠️ AuthContext: Failed to load student profile:",
-            profileError
+            profileError,
           );
         }
       } else {
@@ -102,7 +126,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Load student profile after successful login
       try {
         const profileResponse = await StudentAPI.getStudentProfile(
-          response.user.id
+          response.user.id,
         );
         const profileData = (profileResponse as any)?.success
           ? (profileResponse as any).data
@@ -110,12 +134,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setStudentProfile(profileData);
         console.log(
           "✅ AuthContext: Student profile loaded on login:",
-          profileData
+          profileData,
         );
       } catch (profileError) {
         console.log(
           "⚠️ AuthContext: Failed to load student profile on login:",
-          profileError
+          profileError,
         );
       }
     } catch (error) {
@@ -163,7 +187,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error(
         "⚠️ AuthContext: Failed to refresh student profile:",
-        error
+        error,
       );
     }
   };

@@ -28,17 +28,17 @@ export default function WELLocationsScreen() {
 
   const loadWELLocations = async () => {
     try {
-      console.log("🔍 WELLocations: Loading locations");
+      console.log("🔍 W.E.L Locations: Loading locations");
       const locationsData = await StudentAPI.getWELLocations();
       console.log(
-        "✅ WELLocations: Locations loaded:",
-        JSON.stringify(locationsData, null, 2)
+        "✅ W.E.L Locations: Locations loaded:",
+        JSON.stringify(locationsData, null, 2),
       );
 
       setLocations(Array.isArray(locationsData) ? locationsData : []);
     } catch (error) {
-      console.error("❌ WELLocations: Error loading locations:", error);
-      Alert.alert("Error", "Failed to load WEL locations");
+      console.error("❌ W.E.L Locations: Error loading locations:", error);
+      Alert.alert("Error", "Failed to load W.E.L locations");
       setLocations([]);
     } finally {
       setLoading(false);
@@ -61,11 +61,11 @@ export default function WELLocationsScreen() {
       // For now, just show an alert. In a real app, you'd navigate to an application form
       Alert.alert(
         "Apply for Placement",
-        "This feature will allow you to apply for a WEL placement at this location.",
-        [{ text: "OK" }]
+        "This feature will allow you to apply for a W.E.L placement at this location.",
+        [{ text: "OK" }],
       );
     } catch (error) {
-      console.error("❌ WELLocations: Error applying for placement:", error);
+      console.error("❌ W.E.L Locations: Error applying for placement:", error);
       Alert.alert("Error", "Failed to apply for placement");
     }
   };
@@ -78,7 +78,7 @@ export default function WELLocationsScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" />
-        <Text style={styles.loadingText}>Loading WEL locations...</Text>
+        <Text style={styles.loadingText}>Loading W.E.L locations...</Text>
       </View>
     );
   }
@@ -94,11 +94,10 @@ export default function WELLocationsScreen() {
         <Card.Content>
           <View style={styles.header}>
             <Ionicons name="location" size={24} color="#014b01" />
-            <Title style={styles.title}>Work Experience Locations</Title>
+            <Title style={styles.title}>W.E.L Locations</Title>
           </View>
           <Paragraph>
-            Browse available work experience learning locations and apply for
-            placements.
+            Browse available W.E.L locations and apply for placements.
           </Paragraph>
         </Card.Content>
       </Card>

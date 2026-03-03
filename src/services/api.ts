@@ -83,15 +83,26 @@ const setupInterceptors = (api: any) => {
         originalRequest._retry = true;
 
         try {
+          console.log("🔄 API: 401 error, attempting token refresh...");
           const newToken = await AuthService.refreshToken();
           if (newToken) {
+            console.log("✅ API: Token refreshed, retrying request");
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return api(originalRequest);
           } else {
-            await AuthService.logout();
+            console.log(
+              "⚠️ API: Token refresh returned null, but keeping user logged in",
+            );
+            // Don't logout - user might just have network issues
+            // Let them continue using the app
           }
         } catch (refreshError) {
-          await AuthService.logout();
+          console.log(
+            "⚠️ API: Token refresh failed (not logging out):",
+            refreshError,
+          );
+          // DON'T logout automatically - this is too aggressive
+          // Only logout if user explicitly requests it
         }
       }
 

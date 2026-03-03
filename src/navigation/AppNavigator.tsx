@@ -197,9 +197,17 @@ function MoreHomeScreen({ navigation }: any) {
           }}
           onPress={() => navigation.navigate("WEL")}
         >
-          <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
-            💼 Work Experience
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Ionicons
+              name="restaurant"
+              size={20}
+              color="#333"
+              style={{ marginRight: 8 }}
+            />
+            <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
+              W.E.L
+            </Text>
+          </View>
         </TouchableOpacity>
 
         {/* Logout Button */}
@@ -310,7 +318,7 @@ function MoreStackNavigator() {
       <MoreStack.Screen
         name="WEL"
         component={WELScreen}
-        options={{ title: "Work Experience" }}
+        options={{ title: "W.E.L" }}
       />
     </MoreStack.Navigator>
   );
@@ -423,7 +431,7 @@ function MainStackNavigator() {
       <Stack.Screen
         name="WELLocations"
         component={WELLocationsScreen}
-        options={{ title: "WEL Locations" }}
+        options={{ title: "W.E.L Locations" }}
       />
     </Stack.Navigator>
   );

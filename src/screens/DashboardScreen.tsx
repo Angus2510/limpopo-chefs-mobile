@@ -22,6 +22,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import StudentAPI from "../services/api";
 import { DashboardData, Student } from "../types";
 import { useAuth } from "../contexts/AuthContext";
+import { getQualificationName } from "../utils/qualification";
 
 const getPriorityColor = (priority: string) => {
   switch (priority) {
@@ -75,7 +76,9 @@ export default function DashboardScreen() {
             email: studentData.email || user?.email || "",
             studentNumber:
               studentData.admissionNumber || studentData.username || user.id,
-            course: studentData.qualificationTitle || "Not enrolled",
+            course: getQualificationName(
+              studentData.intakeGroupTitle || studentData.qualificationTitle,
+            ),
             year: 1,
             profileImage: studentData.avatarUrl || undefined,
             campus: studentData.campusTitle || "",
@@ -447,7 +450,13 @@ export default function DashboardScreen() {
         <Card.Content>
           <Title>Welcome back, {dashboardData.student.name}!</Title>
           <Paragraph>Username: {dashboardData.student.studentNumber}</Paragraph>
-          <Paragraph>Qualification: {dashboardData.student.course}</Paragraph>
+          <Paragraph>
+            Qualification:{" "}
+            {getQualificationName(
+              dashboardData.student.intakeGroupTitle ||
+                dashboardData.student.course,
+            )}
+          </Paragraph>
           {studentProfile?.campus && (
             <Paragraph>Campus: {studentProfile.campus}</Paragraph>
           )}
