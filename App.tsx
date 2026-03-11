@@ -3,6 +3,8 @@ import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { Provider as PaperProvider, MD3LightTheme } from "react-native-paper";
 import { StatusBar } from "expo-status-bar";
 import * as Notifications from "expo-notifications";
+import { useFonts } from "expo-font";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import {
   NotificationBadgeProvider,
@@ -97,7 +99,7 @@ function AppWithNotifications() {
     if (user?.id) {
       console.log(
         "👤 User logged in, setting up push notifications for:",
-        user.id
+        user.id,
       );
       setupPushNotifications(user.id);
     }
@@ -125,7 +127,7 @@ function AppWithNotifications() {
         console.log("✅ Push token registered and sent to backend:", token);
       } else {
         console.log(
-          "⚠️ Push token registration failed - notifications may not work"
+          "⚠️ Push token registration failed - notifications may not work",
         );
       }
 
@@ -134,7 +136,7 @@ function AppWithNotifications() {
         async (notification) => {
           console.log(
             "🔔 Notification received while app active:",
-            notification
+            notification,
           );
 
           // Increment unread count when notification is received
@@ -148,7 +150,7 @@ function AppWithNotifications() {
           } catch (error) {
             console.error("❌ Error updating badge count:", error);
           }
-        }
+        },
       );
 
       // Listen for user tapping on notifications
@@ -175,6 +177,15 @@ function AppWithNotifications() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    ...Ionicons.font,
+    ...MaterialCommunityIcons.font,
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <ErrorBoundary>
       <PaperProvider theme={lightTheme}>

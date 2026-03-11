@@ -7,7 +7,9 @@ export const images = {
 
   // App icons (from root assets folder)
   icon: require("../../../assets/icon.png"),
+  iconNew: require("../../../assets/icon-new.png"), // New IconKitchen generated icon
   adaptiveIcon: require("../../../assets/adaptive-icon.png"),
+  adaptiveIconNew: require("../../../assets/adaptive-icon-new.png"), // New adaptive icon
   splashIcon: require("../../../assets/splash-icon.png"),
   favicon: require("../../../assets/favicon.png"),
 
@@ -16,6 +18,7 @@ export const images = {
   logo: require("../../../assets/logo-icon.png"), // Limpopo Chefs Academy logo
   limpopoLogo: require("../../../assets/logo-icon.png"), // Alternative name for the same logo
   fullLogo: require("./logo.png"), // Full logo with text
+  notificationIcon: require("../../../assets/notification-icon-new.png"), // New notification icon
   // yourImage: require('./your-image.png'),
 };
 

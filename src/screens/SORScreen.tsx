@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Asset } from "expo-asset";
+import { File } from "expo-file-system";
 import {
   SORResult,
   ProcessedResult,
@@ -30,11 +31,27 @@ import { useAuth } from "../contexts/AuthContext";
 import StudentAPI from "../services/api";
 import { images } from "../assets/images";
 import { getQualificationName } from "../utils/qualification";
+import {
+  GROUP_SUBJECTS_CONFIG,
+  getIntakeCategory,
+  filterAndSortResults,
+  findMatchingSubject,
+} from "../utils/resultsSetup";
+import { calculateCompetencyStatus } from "../utils/competencyCalculation";
+import { getAllSubjectsForSOR } from "../utils/yearBasedSyllabus";
 
 interface SubjectIndexItem {
   number: string;
   subject: string;
   reference: string;
+}
+
+// Helper to format date as '23 March 2025'
+function formatFullDate(date: Date) {
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = date.toLocaleString("en-ZA", { month: "long" });
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
 }
 
 export default function SORScreen(): React.JSX.Element {
@@ -85,37 +102,60 @@ export default function SORScreen(): React.JSX.Element {
           // Check if we have any results at all
           if (!data.results || data.results.length === 0) {
             console.log("⚠️ SOR: No results found for student");
-
-            // Check if this is because there are no results, or if there are subjects but no results
-            if (data.summary?.totalSubjects > 0) {
-              console.log(
-                `📚 SOR: Student has ${data.summary.totalSubjects} subjects but no results yet`,
-              );
-              setError(
-                `Student has ${data.summary.totalSubjects} subjects enrolled but no assessment results available yet.`,
-              );
-            } else {
-              console.log("📚 SOR: No subjects found for student");
-              setError("No subjects or results found for this student.");
-            }
-
             setResultsData({ results: [] });
+            setError("No results found for this student.");
             return;
           }
 
-          // Transform ProcessedResult[] to SORResult[] for compatibility
-          const transformedResults: SORResult[] = data.results.map(
-            (result: ProcessedResult) => ({
-              subject: result.subjectTitle,
-              result:
-                result.percent !== null ? `${result.percent}%` : "No Mark",
-              status: result.competencyStatus,
-              unitTitle: result.subjectTitle,
-              id: result.resultId || result.subjectId || "",
-              dateCreated: result.dateTaken || result.dateAssessed || "",
-              competency: result.competency === "competent",
-              rawData: result,
-            }),
+          // --- Apply same logic as web SOR ---
+          // 1. Get the full ordered subjects list for this student's intake.
+          //    Use data.allSubjects from the API — titles match data.results exactly.
+          const intakeGroup = data.student?.intakeGroupTitle || "";
+          const subjects: Array<{ title: string; type?: string }> =
+            data.allSubjects && data.allSubjects.length > 0
+              ? data.allSubjects
+              : (() => {
+                  const intakeCategory = getIntakeCategory(intakeGroup);
+                  return getAllSubjectsForSOR(
+                    GROUP_SUBJECTS_CONFIG[intakeCategory]?.subjects || [],
+                    intakeGroup,
+                  );
+                })();
+
+          // 2. Deduplicate: keep only the latest result per subject title
+          const latestResults = new Map<string, ProcessedResult>();
+          data.results.forEach((result: ProcessedResult) => {
+            const title = result.subjectTitle;
+            if (!title) return;
+            const existing = latestResults.get(title);
+            if (
+              !existing ||
+              new Date(result.dateTaken || 0) >
+                new Date(existing.dateTaken || 0)
+            ) {
+              latestResults.set(title, result);
+            }
+          });
+
+          // 3. Map subjects in curriculum order — same as web DownloadSOR
+          const transformedResults: SORResult[] = subjects.map(
+            (subject: any) => {
+              const result = latestResults.get(subject.title);
+              return {
+                subject: subject.title,
+                result:
+                  result && result.hasResult && result.percent !== null
+                    ? `${result.percent}%`
+                    : "-",
+                status:
+                  result && result.hasResult ? result.competencyStatus : "-",
+                unitTitle: subject.title,
+                id: result?.resultId || result?.subjectId || "",
+                dateCreated: result?.dateTaken || result?.dateAssessed || "",
+                competency: result?.competency === "competent",
+                rawData: result || null,
+              };
+            },
           );
 
           const resultsData: ResultsData = {
@@ -634,51 +674,17 @@ export default function SORScreen(): React.JSX.Element {
     return `${day} ${month} ${year}`;
   };
 
-  // PDF Download Handler - Exact same logic as web version
+  // PDF Download Handler - Enhanced to match web version exactly
   const handleDownloadPDF = async () => {
+    if (!studentData && !studentProfile?.student) {
+      Alert.alert("Error", "Student data is missing or invalid");
+      return;
+    }
+
+    setDownloading(true);
+
     try {
-      setDownloading(true);
-
-      // Load logo as base64 for watermark
-      let logoBase64 = "";
-      try {
-        const asset = Asset.fromModule(images.fullLogo);
-        await asset.downloadAsync();
-
-        // Use fetch to get the asset and convert to base64
-        const response = await fetch(asset.localUri || asset.uri);
-        const buffer = await response.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-
-        // Convert to base64
-        let binary = "";
-        for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        const base64String = btoa(binary);
-        logoBase64 = `data:image/png;base64,${base64String}`;
-
-        console.log("✅ SOR: Logo loaded for watermark successfully");
-      } catch (logoError) {
-        console.warn("⚠️ SOR: Could not load logo for watermark:", logoError);
-        // Try fallback method
-        try {
-          const asset = Asset.fromModule(images.fullLogo);
-          await asset.downloadAsync();
-
-          if (asset.localUri) {
-            logoBase64 = asset.localUri;
-            console.log("✅ SOR: Using local URI as fallback for watermark");
-          }
-        } catch (fallbackError) {
-          console.warn(
-            "⚠️ SOR: Fallback watermark method also failed:",
-            fallbackError,
-          );
-          // Continue without watermark if all methods fail
-        }
-      }
-
+      // Extract student information using web version logic
       const studentNumber =
         studentData?.studentNumber ||
         studentData?.admissionNumber ||
@@ -699,86 +705,78 @@ export default function SORScreen(): React.JSX.Element {
         user?.lastName ||
         "N/A";
 
+      // Map campus - for mobile we'll use what we have
       const campus =
         studentData?.campusName ||
         studentProfile?.student?.campusName ||
         studentProfile?.campus ||
         "MOKOPANE";
 
-      const qualification =
+      // Get the intake group title for categorization - CRITICAL for proper results
+      const intakeGroup =
         studentData?.intakeGroupTitle ||
         studentProfile?.student?.intakeGroupTitle ||
         studentProfile?.course ||
-        studentData?.qualificationTitle ||
-        "Not enrolled";
+        "";
 
-      // Helper function to get proper qualification name
-      const getQualificationName = (intakeTitle: string) => {
-        const category = intakeTitle.toUpperCase();
-        if (category.includes("OCG")) {
-          return "Occupational Grande Chef: Dual Qualification & Trade Test";
-        } else if (
-          category.includes("DIPLOMA") &&
-          category.includes("EXCHANGE")
-        ) {
-          return "International Exchange Program Diploma: Food Preparation & Culinary Arts";
-        } else if (category.includes("DIPLOMA")) {
-          return "Diploma: Food Preparation and Culinary Arts";
-        } else if (category.includes("AWARD")) {
-          return "Award: Introduction To The Hospitality Industry & Cooking";
-        } else if (category.includes("CERTIFICATE")) {
-          return "Certificate: Professional Cookery and the Principles of Hospitality";
-        } else if (category.includes("PASTRY")) {
-          return "Pastry Diploma: Professional Patisserie (Pastry)";
+      // Load watermark image as base64
+      let backgroundBase64 = "";
+      try {
+        const asset = Asset.fromModule(images.fullLogo);
+        await asset.downloadAsync();
+        if (asset.localUri) {
+          const file = new File(asset.localUri);
+          const base64String = await file.base64();
+          if (base64String) {
+            backgroundBase64 = `data:image/png;base64,${base64String}`;
+          }
         }
-        return intakeTitle;
-      };
+      } catch (bgError) {
+        console.warn("⚠️ SOR: Could not load watermark:", bgError);
+      }
 
-      // Build results table HTML
+      // Build table rows directly from the results already loaded — no subject-config matching needed
       const resultsRows =
         results.length > 0
           ? results
-              .map((result) => {
-                const rawPercent = result.result?.replace("%", "") || "0";
+              .map((result: SORResult) => {
+                const rawResult = result.result || "";
+                const numericStr = rawResult.replace("%", "").trim();
+                const numericVal = parseFloat(numericStr);
                 const displayPercent =
-                  rawPercent !== "0"
-                    ? `${Math.ceil(parseFloat(rawPercent))}%`
-                    : "N/A";
-                const statusColor =
-                  result.status === "C" ? "#4caf50" : "#f44336";
-
+                  !isNaN(numericVal) && numericVal > 0
+                    ? `${Math.ceil(numericVal)}%`
+                    : rawResult || "N/A";
+                const status = (result.status || "NYC").toUpperCase();
+                const statusColor = status === "C" ? "#4caf50" : "#f44336";
+                const subjectName = (
+                  result.subject ||
+                  result.unitTitle ||
+                  "N/A"
+                ).toUpperCase();
                 return `
                 <tr>
-                  <td style="padding: 6px 8px; border: 1px solid #ddd; font-size: 9px;">
-                    ${(
-                      result.subject ||
-                      result.unitTitle ||
-                      "N/A"
-                    ).toUpperCase()}
-                  </td>
-                  <td style="padding: 6px 8px; border: 1px solid #ddd; text-align: center; font-size: 9px;">
-                    ${displayPercent}
-                  </td>
-                  <td style="padding: 6px 8px; border: 1px solid #ddd; text-align: center; font-weight: bold; color: ${statusColor}; font-size: 9px;">
-                    ${(result.status || "N/A").toUpperCase()}
-                  </td>
-                </tr>
-              `;
+                  <td style="padding: 6px 8px; border: 1px solid #ddd; font-size: 9px;">${subjectName}</td>
+                  <td style="padding: 6px 8px; border: 1px solid #ddd; text-align: center; font-size: 9px;">${displayPercent}</td>
+                  <td style="padding: 6px 8px; border: 1px solid #ddd; text-align: center; font-weight: bold; color: ${statusColor}; font-size: 9px;">${status}</td>
+                </tr>`;
               })
               .join("")
           : `<tr><td colspan="3" style="padding: 8px; border: 1px solid #ddd; text-align: center;">No results available</td></tr>`;
 
-      // Add overall outcome row
-      const overallStatusColor = overallOutcome === "C" ? "#4caf50" : "#f44336";
+      const pdfOverallOutcome = results.some(
+        (r: SORResult) => (r.status || "").toUpperCase() === "NYC",
+      )
+        ? "NYC"
+        : "C";
+      const overallStatusColor =
+        pdfOverallOutcome === "C" ? "#4caf50" : "#f44336";
       const overallRow = `
         <tr style="font-weight: bold;">
           <td style="padding: 6px 8px; border: 1px solid #ddd; font-size: 9px;">OVERALL OUTCOME</td>
           <td style="padding: 6px 8px; border: 1px solid #ddd; text-align: center; font-size: 9px;">-</td>
-          <td style="padding: 6px 8px; border: 1px solid #ddd; text-align: center; font-weight: bold; color: ${overallStatusColor}; font-size: 9px;">
-            ${overallOutcome}
-          </td>
-        </tr>
-      `;
+          <td style="padding: 6px 8px; border: 1px solid #ddd; text-align: center; font-weight: bold; color: ${overallStatusColor}; font-size: 9px;">${pdfOverallOutcome}</td>
+        </tr>`;
 
       // Build index table HTML
       const indexRows = indexData
@@ -797,6 +795,10 @@ export default function SORScreen(): React.JSX.Element {
         .join("");
 
       // Generate HTML matching the exact web version layout
+      console.log(
+        "📝 SOR: Generating PDF with watermark:",
+        backgroundBase64 ? "YES" : "NO",
+      );
       const html = `
         <!DOCTYPE html>
         <html>
@@ -824,40 +826,28 @@ export default function SORScreen(): React.JSX.Element {
               width: 210mm;
               min-height: 297mm;
               padding: 20mm;
-              background: white;
+              background: transparent;
               position: relative;
             }
             ${
-              logoBase64
+              backgroundBase64
                 ? `
-            .page::before {
+            /* Tiled watermark behind all content on every page */
+            body::before {
               content: "";
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              width: 70%;
-              height: 70%;
-              background-image: url('${logoBase64}');
-              background-repeat: no-repeat;
-              background-position: center;
-              background-size: contain;
-              opacity: 0.1;
-              z-index: 0;
-              pointer-events: none;
-            }
-            .page > * {
-              position: relative;
-              z-index: 1;
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100vw;
+              height: 100vh;
+              background-image: url('${backgroundBase64}');
+              background-repeat: repeat;
+              background-size: 120px auto;
+              opacity: 0.07;
+              z-index: -1;
             }
             `
-                : `
-            /* No watermark available */
-            .page > * {
-              position: relative;
-              z-index: 1;
-            }
-            `
+                : ``
             }
             .logo {
               text-align: center;
@@ -962,7 +952,7 @@ export default function SORScreen(): React.JSX.Element {
             </div>
             <div class="detail-row">
               <div class="detail-label">QUALIFICATIONS</div>
-              <div class="detail-value">{getQualificationName(qualification).toUpperCase()}</div>
+              <div class="detail-value">${getQualificationName(intakeGroup).toUpperCase()}</div>
             </div>
             <div class="detail-row">
               <div class="detail-label">SCHOOL NAME</div>
@@ -1202,10 +1192,12 @@ export default function SORScreen(): React.JSX.Element {
                       style={
                         result.status === "C"
                           ? styles.competentStatus
-                          : styles.nycStatus
+                          : result.status === "NYC"
+                            ? styles.nycStatus
+                            : styles.pendingStatus
                       }
                     >
-                      {result.status || "N/A"}
+                      {result.status || "-"}
                     </Text>
                   </DataTable.Cell>
                 </DataTable.Row>
@@ -1327,6 +1319,9 @@ const styles = StyleSheet.create({
   nycStatus: {
     color: "#f44336",
     fontWeight: "bold",
+  },
+  pendingStatus: {
+    color: "#999",
   },
   legend: {
     fontSize: 12,
