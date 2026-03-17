@@ -2,13 +2,13 @@
   "expo": {
     "name": "LCA+",
     "slug": "limpopo-chefs-mobile",
-    "version": "1.0.11",
+    "version": "1.0.12",
     "description": "The official mobile app for Limpopo Chefs Academy students. Access your academic information, track progress, view announcements, manage attendance, and stay connected with your culinary education journey.",
     "orientation": "portrait",
-    "icon": "./assets/icon-new.png",
+    "icon": "./assets/IconKitchen-Output (1)/ios/AppIcon~ios-marketing.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/icon-new.png",
+      "image": "./assets/IconKitchen-Output (1)/ios/AppIcon~ios-marketing.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.limpopoChefs.mobile",
       "userInterfaceStyle": "light",
-      "buildNumber": "18",
+      "buildNumber": "19",
       "requireFullScreen": false,
       "teamId": "YU3WA8Z4R7",
       "infoPlist": {
@@ -38,11 +38,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon-new.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/IconKitchen-Output (1)/android/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
+        "backgroundImage": "./assets/IconKitchen-Output (1)/android/res/mipmap-xxxhdpi/ic_launcher_background.png",
+        "monochromeImage": "./assets/IconKitchen-Output (1)/android/res/mipmap-xxxhdpi/ic_launcher_monochrome.png"
       },
       "package": "com.limpopoChefs.mobile",
-      "versionCode": 15,
+      "versionCode": 16,
       "userInterfaceStyle": "light",
       "permissions": [
         "android.permission.CAMERA",
@@ -57,7 +58,7 @@
     },
     "assetBundlePatterns": ["**/*"],
     "web": {
-      "favicon": "assets/favicon-new.ico"
+      "favicon": "./assets/IconKitchen-Output (1)/web/favicon.ico"
     },
     "extra": {
       "eas": {

@@ -3,7 +3,7 @@ import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { Provider as PaperProvider, MD3LightTheme } from "react-native-paper";
 import { StatusBar } from "expo-status-bar";
 import * as Notifications from "expo-notifications";
-import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import {
@@ -19,6 +19,9 @@ import {
   handleNotificationTap,
 } from "./src/services/pushNotifications";
 import { APP_CONFIG } from "./src/config";
+
+// Keep the splash screen visible while fonts load
+SplashScreen.preventAutoHideAsync();
 
 // Force Light Theme for React Native Paper
 const lightTheme = {
@@ -177,14 +180,9 @@ function AppWithNotifications() {
 }
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
-    ...Ionicons.font,
-    ...MaterialCommunityIcons.font,
-  });
-
-  if (!fontsLoaded) {
-    return null;
-  }
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
 
   return (
     <ErrorBoundary>

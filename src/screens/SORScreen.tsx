@@ -19,7 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Asset } from "expo-asset";
-import { File } from "expo-file-system";
+import * as FileSystem from "expo-file-system";
 import {
   SORResult,
   ProcessedResult,
@@ -724,9 +724,11 @@ export default function SORScreen(): React.JSX.Element {
       try {
         const asset = Asset.fromModule(images.fullLogo);
         await asset.downloadAsync();
-        if (asset.localUri) {
-          const file = new File(asset.localUri);
-          const base64String = await file.base64();
+        const uri = asset.localUri || asset.uri;
+        if (uri) {
+          const base64String = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
           if (base64String) {
             backgroundBase64 = `data:image/png;base64,${base64String}`;
           }
@@ -843,7 +845,7 @@ export default function SORScreen(): React.JSX.Element {
               background-image: url('${backgroundBase64}');
               background-repeat: repeat;
               background-size: 120px auto;
-              opacity: 0.07;
+              opacity: 0.15;
               z-index: -1;
             }
             `

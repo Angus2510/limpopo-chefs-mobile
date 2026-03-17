@@ -34,8 +34,7 @@
     },
     "production": {
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease"
+        "buildType": "app-bundle"
       },
       "ios": {
         "distribution": "store"
@@ -52,6 +51,10 @@
         "appleId": "anguscarey390@gmail.com",
         "ascAppId": "6754912528",
         "appleTeamId": "YU3WA8Z4R7"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "internal"
       }
     }
   }
