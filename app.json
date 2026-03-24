@@ -5,10 +5,10 @@
     "version": "1.0.12",
     "description": "The official mobile app for Limpopo Chefs Academy students. Access your academic information, track progress, view announcements, manage attendance, and stay connected with your culinary education journey.",
     "orientation": "portrait",
-    "icon": "./assets/IconKitchen-Output (1)/ios/AppIcon~ios-marketing.png",
+    "icon": "./assets/icon-new.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/IconKitchen-Output (1)/ios/AppIcon~ios-marketing.png",
+      "image": "./assets/icon-new.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.limpopoChefs.mobile",
       "userInterfaceStyle": "light",
-      "buildNumber": "19",
+      "buildNumber": "20",
       "requireFullScreen": false,
       "teamId": "YU3WA8Z4R7",
       "infoPlist": {

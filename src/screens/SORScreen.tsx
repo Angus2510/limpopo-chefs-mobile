@@ -1143,18 +1143,13 @@ export default function SORScreen(): React.JSX.Element {
         </Card.Content>
       </Card>
 
-      {/* Download Button - Moved here */}
+      {/* Info message instead of Download Button */}
       <Card style={styles.card}>
         <Card.Content>
-          <Button
-            mode="contained"
-            icon={downloading ? "loading" : "download"}
-            style={styles.downloadButton}
-            onPress={handleDownloadPDF}
-            disabled={downloading}
-          >
-            {downloading ? "Generating PDF..." : "Download SOR (PDF)"}
-          </Button>
+          <Text style={{ textAlign: "center", color: "#333", fontSize: 16 }}>
+            Your Statement of Results (SOR) is available on the student portal.
+            Please log in and download it directly from your dashboard.
+          </Text>
         </Card.Content>
       </Card>
 
