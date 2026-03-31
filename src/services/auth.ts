@@ -197,7 +197,7 @@ export class AuthService {
     } catch (error) {
       console.log("Logout error:", error);
     } finally {
-      // Clear all stored data
+      // Only clear all stored data on explicit logout
       await AsyncStorage.multiRemove([
         TOKEN_KEY,
         REFRESH_TOKEN_KEY,
@@ -233,41 +233,31 @@ export class AuthService {
 
       // If we have a refresh token, use it
       if (refreshToken) {
-        console.log("🔄 Using refresh token to get new access token");
-        const response = await authApi.post("/auth/refresh", {
-          refreshToken,
-        });
-
-        const {
-          accessToken,
-          refreshToken: newRefreshToken,
-          expiresIn,
-        } = response.data;
-
-        // Update stored tokens
-        await AsyncStorage.setItem(TOKEN_KEY, accessToken);
-        console.log("✅ New access token stored");
-
-        if (newRefreshToken) {
-          await AsyncStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
-          console.log("✅ New refresh token stored");
+        try {
+          const response = await authApi.post("/auth/refresh", {
+            refreshToken,
+          });
+          const {
+            accessToken,
+            refreshToken: newRefreshToken,
+            expiresIn,
+          } = response.data;
+          await AsyncStorage.setItem(TOKEN_KEY, accessToken);
+          if (newRefreshToken) {
+            await AsyncStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
+          }
+          const expiryTime = Date.now() + (expiresIn || 7 * 24 * 60 * 60) * 1000;
+          await AsyncStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
+          return accessToken;
+        } catch (refreshError) {
+          console.log("⚠️ Token refresh failed, keeping current token:", refreshError);
+          // Do NOT logout or clear user, just keep current token
+          return currentToken;
         }
-
-        // Update expiry time
-        const expiryTime = Date.now() + (expiresIn || 7 * 24 * 60 * 60) * 1000;
-        await AsyncStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
-        console.log(
-          "✅ Token refreshed successfully, expires:",
-          new Date(expiryTime).toISOString(),
-        );
-
-        return accessToken;
       }
 
       // If no refresh token but we have a current token, try to extend it
-      // by making a request to verify/refresh endpoint with current token
       if (currentToken) {
-        console.log("🔄 No refresh token, trying to extend current token");
         try {
           const response = await authApi.post(
             "/auth/refresh",
@@ -276,31 +266,22 @@ export class AuthService {
               headers: { Authorization: `Bearer ${currentToken}` },
             },
           );
-
           if (response.data?.accessToken) {
             const { accessToken, expiresIn } = response.data;
             await AsyncStorage.setItem(TOKEN_KEY, accessToken);
-
-            const expiryTime =
-              Date.now() + (expiresIn || 7 * 24 * 60 * 60) * 1000;
+            const expiryTime = Date.now() + (expiresIn || 7 * 24 * 60 * 60) * 1000;
             await AsyncStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
-            console.log("✅ Token extended successfully");
             return accessToken;
           }
         } catch (extendError) {
-          console.log(
-            "⚠️ Token extension failed, keeping current token:",
-            extendError,
-          );
+          console.log("⚠️ Token extension failed, keeping current token:", extendError);
         }
       }
 
-      console.log("⚠️ No refresh token available, will use existing token");
+      // Always keep user logged in, even if refresh fails
       return currentToken;
     } catch (error) {
-      console.log("⚠️ Token refresh failed (not logging out):", error);
-      // DON'T logout - just return the current token
-      // The user can still use the app with their existing token
+      console.log("⚠️ Token refresh error (keeping user logged in):", error);
       const currentToken = await AsyncStorage.getItem(TOKEN_KEY);
       return currentToken;
     }

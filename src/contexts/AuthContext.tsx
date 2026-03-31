@@ -80,10 +80,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           "✅ AuthContext: Auto-login successful for user:",
           userData.id,
         );
-        console.log("✅ AuthContext: User will stay logged in");
         setUser(userData);
 
-        // Load student profile data
+        // Try to load student profile, but do NOT clear user if it fails
         try {
           const profileResponse = await StudentAPI.getStudentProfile(
             userData.id,
@@ -98,16 +97,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             "⚠️ AuthContext: Failed to load student profile:",
             profileError,
           );
+          // Keep user logged in, just show fallback data
         }
       } else {
-        console.log("❌ AuthContext: Auto-login failed - user needs to login");
+        // No stored credentials, only then clear user
         setUser(null);
         setStudentProfile(null);
       }
     } catch (error) {
-      console.log("❌ AuthContext: Auto-login error:", error);
-      setUser(null);
-      setStudentProfile(null);
+      console.log("❌ AuthContext: Auto-login error (keeping user logged in):", error);
+      // Do NOT clear user or studentProfile on error
     } finally {
       console.log("🔐 AuthContext: Auto-login check completed");
       setIsLoading(false);

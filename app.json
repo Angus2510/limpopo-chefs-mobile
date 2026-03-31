@@ -5,10 +5,10 @@
     "version": "1.0.12",
     "description": "The official mobile app for Limpopo Chefs Academy students. Access your academic information, track progress, view announcements, manage attendance, and stay connected with your culinary education journey.",
     "orientation": "portrait",
-    "icon": "./assets/icon-new.png",
+    "icon": "./assets/IconKitchen-Output (3)/ios/AppIcon@3x.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/icon-new.png",
+      "image": "./assets/IconKitchen-Output (3)/ios/AppIcon@3x.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.limpopoChefs.mobile",
       "userInterfaceStyle": "light",
-      "buildNumber": "20",
+      "buildNumber": "23",
       "requireFullScreen": false,
       "teamId": "YU3WA8Z4R7",
       "infoPlist": {
@@ -38,9 +38,9 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/IconKitchen-Output (1)/android/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
-        "backgroundImage": "./assets/IconKitchen-Output (1)/android/res/mipmap-xxxhdpi/ic_launcher_background.png",
-        "monochromeImage": "./assets/IconKitchen-Output (1)/android/res/mipmap-xxxhdpi/ic_launcher_monochrome.png"
+        "foregroundImage": "./assets/IconKitchen-Output (3)/android/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
+        "backgroundImage": "./assets/IconKitchen-Output (3)/android/res/mipmap-xxxhdpi/ic_launcher_background.png",
+        "monochromeImage": "./assets/IconKitchen-Output (3)/android/res/mipmap-xxxhdpi/ic_launcher_monochrome.png"
       },
       "package": "com.limpopoChefs.mobile",
       "versionCode": 16,
@@ -58,7 +58,7 @@
     },
     "assetBundlePatterns": ["**/*"],
     "web": {
-      "favicon": "./assets/IconKitchen-Output (1)/web/favicon.ico"
+      "favicon": "./assets/IconKitchen-Output (3)/web/favicon.ico"
     },
     "extra": {
       "eas": {
@@ -66,7 +66,7 @@
       }
     },
     "notification": {
-      "icon": "./assets/notification-icon-new.png",
+      "icon": "./assets/IconKitchen-Output (3)/android/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
       "color": "#014b01",
       "androidMode": "default",
       "androidCollapsedTitle": "{{unread_count}} new notifications"

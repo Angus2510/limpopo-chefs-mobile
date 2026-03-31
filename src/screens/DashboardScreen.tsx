@@ -449,7 +449,9 @@ export default function DashboardScreen() {
       <Card style={styles.welcomeCard}>
         <Card.Content>
           <Title>Welcome back, {dashboardData.student.name}!</Title>
-          <Paragraph>Username: {dashboardData.student.studentNumber}</Paragraph>
+          <Paragraph>
+            Student No: {dashboardData.student.studentNumber}
+          </Paragraph>
           <Paragraph>
             Qualification:{" "}
             {getQualificationName(

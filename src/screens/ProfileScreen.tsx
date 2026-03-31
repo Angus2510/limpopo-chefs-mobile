@@ -360,7 +360,7 @@ export default function ProfileScreen() {
               </Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.label}>Username:</Text>
+              <Text style={styles.label}>Student No:</Text>
               <Text style={styles.value}>
                 {student.admissionNumber || student.username}
               </Text>
