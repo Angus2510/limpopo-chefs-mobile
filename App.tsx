@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Font from "expo-font";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import {
   NotificationBadgeProvider,
@@ -180,9 +181,21 @@ function AppWithNotifications() {
 }
 
 export default function App() {
+  const [fontsLoaded, setFontsLoaded] = React.useState(false);
+
   useEffect(() => {
-    SplashScreen.hideAsync();
+    async function loadFonts() {
+      await Font.loadAsync({
+        ...Ionicons.font,
+        ...MaterialCommunityIcons.font,
+      });
+      setFontsLoaded(true);
+      SplashScreen.hideAsync();
+    }
+    loadFonts();
   }, []);
+
+  if (!fontsLoaded) return null;
 
   return (
     <ErrorBoundary>
