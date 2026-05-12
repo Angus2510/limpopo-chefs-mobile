@@ -2,7 +2,7 @@
   "expo": {
     "name": "LCA+",
     "slug": "limpopo-chefs-mobile",
-    "version": "1.0.12",
+    "version": "1.0.16",
     "description": "The official mobile app for Limpopo Chefs Academy students. Access your academic information, track progress, view announcements, manage attendance, and stay connected with your culinary education journey.",
     "orientation": "portrait",
     "icon": "./assets/IconKitchen-Output (3)/ios/AppIcon@3x.png",
@@ -16,9 +16,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.limpopoChefs.mobile",
       "userInterfaceStyle": "light",
-      "buildNumber": "23",
+      "buildNumber": "34",
       "requireFullScreen": false,
-      "teamId": "YU3WA8Z4R7",
       "infoPlist": {
         "CFBundleDisplayName": "LCA+",
         "NSCameraUsageDescription": "This app uses the camera to scan QR codes for attendance tracking.",
@@ -43,7 +42,7 @@
         "monochromeImage": "./assets/IconKitchen-Output (3)/android/res/mipmap-xxxhdpi/ic_launcher_monochrome.png"
       },
       "package": "com.limpopoChefs.mobile",
-      "versionCode": 16,
+      "versionCode": 22,
       "userInterfaceStyle": "light",
       "permissions": [
         "android.permission.CAMERA",
@@ -52,11 +51,11 @@
         "android.permission.INTERNET",
         "android.permission.POST_NOTIFICATIONS"
       ],
-      "usesCleartextTraffic": false,
-      "networkSecurityConfig": "network_security_config",
       "googleServicesFile": "./google-services.json"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "web": {
       "favicon": "./assets/IconKitchen-Output (3)/web/favicon.ico"
     },
@@ -97,7 +96,9 @@
           "androidMode": "default",
           "androidCollapsedTitle": "{{unread_count}} new notifications"
         }
-      ]
+      ],
+      "expo-asset",
+      "./plugins/withAdiRegistration"
     ]
   }
 }
