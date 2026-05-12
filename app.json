@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.limpopoChefs.mobile",
       "userInterfaceStyle": "light",
-      "buildNumber": "34",
+      "buildNumber": "35",
       "requireFullScreen": false,
       "infoPlist": {
         "CFBundleDisplayName": "LCA+",
@@ -42,7 +42,7 @@
         "monochromeImage": "./assets/IconKitchen-Output (3)/android/res/mipmap-xxxhdpi/ic_launcher_monochrome.png"
       },
       "package": "com.limpopoChefs.mobile",
-      "versionCode": 22,
+      "versionCode": 23,
       "userInterfaceStyle": "light",
       "permissions": [
         "android.permission.CAMERA",
