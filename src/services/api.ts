@@ -41,6 +41,12 @@ const apiCallWithFailover = async (apiCall: (api: any) => Promise<any>) => {
     console.log("🌐 Trying primary API (Portal):", API_CONFIG.BASE_URL);
     return await apiCall(primaryApi);
   } catch (error: any) {
+    // Auth errors (401/403) are not server-availability issues — both servers
+    // share the same JWT secret, so retrying on the fallback won't help and
+    // would only trigger a second round of token-refresh logic.
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      throw error;
+    }
     console.warn(
       "⚠️ Primary API failed, trying fallback...",
       error?.message || "Unknown error",
@@ -90,19 +96,19 @@ const setupInterceptors = (api: any) => {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return api(originalRequest);
           } else {
+            // Refresh returned null — the session is genuinely expired.
+            // Notify AuthContext to clear the user and show the login screen.
             console.log(
-              "⚠️ API: Token refresh returned null, but keeping user logged in",
+              "🔒 API: Token refresh failed — triggering session expiry",
             );
-            // Don't logout - user might just have network issues
-            // Let them continue using the app
+            AuthService.triggerSessionExpiry();
           }
         } catch (refreshError) {
           console.log(
-            "⚠️ API: Token refresh failed (not logging out):",
+            "🔒 API: Token refresh threw — triggering session expiry:",
             refreshError,
           );
-          // DON'T logout automatically - this is too aggressive
-          // Only logout if user explicitly requests it
+          AuthService.triggerSessionExpiry();
         }
       }
 
@@ -429,10 +435,13 @@ export class StudentAPI {
             id: item.id || "",
             title: item.title || "Untitled Document",
             description: item.description || "",
-            fileUrl: "", // Don't store expired downloadUrl - fetch fresh one on download
+            fileUrl: item.downloadUrl || "", // Use pre-authenticated signed URL from server
             fileType: fileExtension,
             uploadDate:
-              item.uploadDate || item.createdAt || new Date().toISOString(),
+              item.uploadDate ||
+              item.dateUploaded ||
+              item.createdAt ||
+              new Date().toISOString(),
             category: item.category || "Learning Materials",
             fileKey: item.fileKey || item.filePath || item.documentUrl || "",
           };
@@ -498,25 +507,29 @@ export class StudentAPI {
     });
   }
 
-  // New download method using /file endpoint with fileKey and fileName for direct downloads
+  // Authenticated API call to get a fresh signed URL from the server, then download directly from S3
   static async downloadFileWithKey(
     fileKey: string,
     fileName?: string,
   ): Promise<string> {
     return apiCallWithFailover(async (api) => {
-      console.log("� Creating direct download with fileKey:", {
-        fileKey,
-        fileName,
-      });
+      const response = await api.get(
+        `/downloads/file?fileKey=${encodeURIComponent(fileKey)}&fileName=${encodeURIComponent(fileName || "download")}&download=true`,
+      );
 
-      // Return direct URL with fileKey and download parameter to force download instead of view
-      const downloadUrl = `${
-        api.defaults.baseURL
-      }/downloads/file?fileKey=${encodeURIComponent(
-        fileKey,
-      )}&fileName=${encodeURIComponent(fileName || "download")}&download=true`;
-      console.log("✅ Generated direct download URL:", downloadUrl);
-      return downloadUrl;
+      const url =
+        response.data.signedUrl ||
+        response.data.downloadUrl ||
+        response.data.url;
+
+      if (url) {
+        console.log("✅ Got signed URL from server");
+        return url;
+      }
+
+      // If server streams the file directly (no URL in response), fall back to proxy URL
+      console.log("⚠️ No URL in response, using server proxy URL");
+      return `${api.defaults.baseURL}/downloads/file?fileKey=${encodeURIComponent(fileKey)}&fileName=${encodeURIComponent(fileName || "download")}&download=true`;
     });
   }
 
@@ -526,6 +539,11 @@ export class StudentAPI {
       const response = await api.get(`/students/${studentId}`);
       return response.data;
     });
+  }
+
+  // Alias used by NotificationsScreen and pushNotifications.ts
+  static async getProfile(studentId: string): Promise<any> {
+    return this.getStudentProfile(studentId);
   }
 
   static async updateStudentProfile(

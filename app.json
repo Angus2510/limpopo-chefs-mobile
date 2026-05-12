@@ -53,9 +53,7 @@
       ],
       "googleServicesFile": "./google-services.json"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "web": {
       "favicon": "./assets/IconKitchen-Output (3)/web/favicon.ico"
     },

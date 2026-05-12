@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  AppState,
+  AppStateStatus,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import StudentAPI from "../services/api";
@@ -49,6 +51,7 @@ export default function NotificationsScreen({
   const { markAsRead: updateBadgeCount, refreshUnreadCount } =
     useNotificationBadge();
   const { user, isAuthenticated } = useAuth();
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   // Get actual student ID from authenticated user
   const studentId = user?.id;
@@ -71,6 +74,25 @@ export default function NotificationsScreen({
       }
     }, [route?.params]),
   );
+
+  // Re-fetch when app returns from background
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      "change",
+      (nextState: AppStateStatus) => {
+        if (
+          appStateRef.current.match(/inactive|background/) &&
+          nextState === "active" &&
+          isAuthenticated &&
+          studentId
+        ) {
+          fetchNotifications(true);
+        }
+        appStateRef.current = nextState;
+      },
+    );
+    return () => subscription.remove();
+  }, [isAuthenticated, studentId]);
 
   const fetchNotifications = async (reset = false) => {
     if (!isAuthenticated || !studentId) {

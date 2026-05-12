@@ -31,6 +31,7 @@ import WELScreen from "../screens/WELScreen";
 import WELLocationsScreen from "../screens/WELLocationsScreen";
 import WeeklyCalendarScreen from "../screens/WeeklyCalendarScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
+import StudentCardScreen from "../screens/StudentCardScreen";
 
 // More Home Screen component
 function MoreHomeScreen({ navigation }: any) {
@@ -195,6 +196,25 @@ function MoreHomeScreen({ navigation }: any) {
             shadowOpacity: 0.2,
             shadowRadius: 2,
           }}
+          onPress={() => navigation.navigate("StudentCard")}
+        >
+          <Text style={{ fontSize: 16, fontWeight: "500", color: "#333" }}>
+            🪪 Student Card
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: "white",
+            padding: 15,
+            borderRadius: 8,
+            marginBottom: 10,
+            elevation: 2,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.2,
+            shadowRadius: 2,
+          }}
           onPress={() => navigation.navigate("WEL")}
         >
           <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -262,12 +282,29 @@ export type BottomTabParamList = {
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 const Stack = createStackNavigator<RootStackParamList>();
 
+// Reusable back button that always returns the user to the Dashboard tab
+const BackToDashboard = ({ navigation }: { navigation: any }) => (
+  <TouchableOpacity
+    onPress={() => navigation.getParent()?.navigate("Dashboard")}
+    style={{ paddingHorizontal: 12, paddingVertical: 4 }}
+    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+  >
+    <Ionicons name="arrow-back" size={24} color="#333" />
+  </TouchableOpacity>
+);
+
 function MoreStackNavigator() {
   const MoreStack = createStackNavigator();
   const { unreadCount } = useNotificationBadge();
 
   return (
-    <MoreStack.Navigator>
+    <MoreStack.Navigator
+      screenOptions={({ navigation, route }) =>
+        route.name === "MoreHome"
+          ? {}
+          : { headerLeft: () => <BackToDashboard navigation={navigation} /> }
+      }
+    >
       <MoreStack.Screen
         name="MoreHome"
         component={MoreHomeScreen}
@@ -319,6 +356,11 @@ function MoreStackNavigator() {
         name="WEL"
         component={WELScreen}
         options={{ title: "W.E.L" }}
+      />
+      <MoreStack.Screen
+        name="StudentCard"
+        component={StudentCardScreen}
+        options={{ title: "Student Card" }}
       />
     </MoreStack.Navigator>
   );
@@ -377,8 +419,8 @@ function MoreTabsScreen() {
         name="More"
         component={MoreStackNavigator}
         listeners={({ navigation }) => ({
-          tabPress: () => {
-            // Always navigate to MoreHome when the tab is pressed
+          tabPress: (e) => {
+            e.preventDefault();
             (navigation as any).navigate("More", {
               screen: "MoreHome",
             });
@@ -393,7 +435,13 @@ function AttendanceTabNavigator() {
   const AttendanceStack = createStackNavigator();
 
   return (
-    <AttendanceStack.Navigator>
+    <AttendanceStack.Navigator
+      screenOptions={({ navigation, route }) =>
+        route.name === "AttendanceHome"
+          ? {}
+          : { headerLeft: () => <BackToDashboard navigation={navigation} /> }
+      }
+    >
       <AttendanceStack.Screen
         name="AttendanceHome"
         component={AttendanceScreen}
@@ -425,13 +473,23 @@ function MainStackNavigator() {
       <Stack.Screen
         name="WeeklyCalendar"
         component={WeeklyCalendarScreen}
-        options={{ title: "Weekly Roster" }}
+        options={({ navigation }) => ({
+          title: "Weekly Roster",
+          headerLeft: () => (
+            <BackToDashboard navigation={{ getParent: () => navigation }} />
+          ),
+        })}
       />
 
       <Stack.Screen
         name="WELLocations"
         component={WELLocationsScreen}
-        options={{ title: "W.E.L Locations" }}
+        options={({ navigation }) => ({
+          title: "W.E.L Locations",
+          headerLeft: () => (
+            <BackToDashboard navigation={{ getParent: () => navigation }} />
+          ),
+        })}
       />
     </Stack.Navigator>
   );

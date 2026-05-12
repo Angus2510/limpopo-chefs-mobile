@@ -211,33 +211,6 @@ export default function FeesScreen() {
     );
   }
 
-  const renderTransaction = ({ item }: { item: FeeTransaction }) => (
-    <DataTable.Row>
-      <DataTable.Cell>
-        {new Date(item.transactionDate).toLocaleDateString()}
-      </DataTable.Cell>
-      <DataTable.Cell>{item.description}</DataTable.Cell>
-      <DataTable.Cell
-        numeric
-        style={item.debit && item.debit > 0 ? styles.debit : undefined}
-      >
-        {item.debit && item.debit > 0 ? `R${item.debit.toFixed(2)}` : "-"}
-      </DataTable.Cell>
-      <DataTable.Cell
-        numeric
-        style={item.credit && item.credit > 0 ? styles.credit : undefined}
-      >
-        {item.credit && item.credit > 0 ? `R${item.credit.toFixed(2)}` : "-"}
-      </DataTable.Cell>
-      <DataTable.Cell
-        numeric
-        style={item.runningBalance < 0 ? styles.negative : styles.positive}
-      >
-        R{item.runningBalance.toFixed(2)}
-      </DataTable.Cell>
-    </DataTable.Row>
-  );
-
   return (
     <ScrollView
       style={styles.container}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,12 +9,15 @@ import {
   Alert,
   RefreshControl,
   Platform,
+  AppState,
+  AppStateStatus,
 } from "react-native";
 import { Card, Title, Paragraph, Chip } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { useAuth } from "../contexts/AuthContext";
+import AuthService from "../services/auth";
 import StudentAPI from "../services/api";
 import { DownloadItem } from "../types";
 
@@ -29,12 +32,32 @@ export default function DownloadsScreen() {
   const [downloadProgress, setDownloadProgress] = useState<{
     [key: string]: number;
   }>({});
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   useEffect(() => {
     if (isAuthenticated && user?.id) {
       loadDownloads();
     }
   }, [user?.id, isAuthenticated]);
+
+  // Re-fetch when app returns from background
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      "change",
+      (nextState: AppStateStatus) => {
+        if (
+          appStateRef.current.match(/inactive|background/) &&
+          nextState === "active" &&
+          isAuthenticated &&
+          user?.id
+        ) {
+          loadDownloads();
+        }
+        appStateRef.current = nextState;
+      },
+    );
+    return () => subscription.remove();
+  }, [isAuthenticated, user?.id]);
 
   const loadDownloads = async () => {
     if (!isAuthenticated || !user?.id) return;
@@ -73,32 +96,23 @@ export default function DownloadsScreen() {
     setRefreshing(false);
   };
 
-  const handleDownload = async (
-    download: DownloadItem,
-    useS3: boolean = true,
-  ) => {
+  const handleDownload = async (download: DownloadItem) => {
+    if (downloadingFiles.has(download.id)) return;
+
     try {
       setDownloadingFiles((prev) => new Set(prev).add(download.id));
       setDownloadProgress((prev) => ({ ...prev, [download.id]: 0 }));
 
+      console.log("📱 Starting download for:", download.title);
+
+      // Always fetch a fresh server proxy URL - never use stale listing URLs
       let downloadUrl: string;
-
-      console.log("📱 Requesting fresh download URL for:", {
-        id: download.id,
-        title: download.title,
-        hasFileKey: !!download.fileKey,
-        useS3,
-      });
-
-      // Always fetch a fresh URL - never use cached fileUrl as it expires
-      if (useS3 && download.fileKey) {
-        console.log("📱 Fetching fresh URL with fileKey...");
+      if (download.fileKey) {
         downloadUrl = await StudentAPI.downloadFileWithKey(
           download.fileKey,
           download.title,
         );
       } else {
-        console.log("📱 Fetching fresh URL with download ID...");
         downloadUrl = await StudentAPI.downloadFile(
           download.id,
           download.title,
@@ -109,78 +123,90 @@ export default function DownloadsScreen() {
         throw new Error("No download URL received from server");
       }
 
-      // Generate safe filename
-      const fileExtension = download.fileType || "pdf";
+      // Extract extension from fileKey first, fall back to fileType
+      const keyExt = download.fileKey?.split(".").pop()?.toLowerCase();
+      const fileExtension =
+        keyExt && keyExt.length <= 5 && keyExt !== download.fileKey
+          ? keyExt
+          : download.fileType || "pdf";
+
       const safeFileName = `${download.title.replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.${fileExtension}`;
       const fileUri = `${FileSystem.documentDirectory}${safeFileName}`;
 
-      console.log("📥 Downloading file to:", fileUri);
+      console.log("📥 Downloading to:", fileUri);
 
-      // Download file with progress tracking
+      // Only add auth header for our own server URLs.
+      // S3 pre-signed URLs are self-authenticating - sending an Authorization
+      // header alongside the pre-signed signature causes S3 to reject the request.
+      const isS3Url =
+        downloadUrl.includes("amazonaws.com") ||
+        downloadUrl.includes("X-Amz-") ||
+        downloadUrl.includes("x-amz-");
+      const token = isS3Url ? null : await AuthService.getToken();
+      const downloadHeaders: Record<string, string> = {};
+      if (token) {
+        downloadHeaders["Authorization"] = `Bearer ${token}`;
+      }
+
       const downloadResumable = FileSystem.createDownloadResumable(
         downloadUrl,
         fileUri,
-        {},
+        { headers: downloadHeaders },
         (downloadProgress) => {
-          const progress =
-            downloadProgress.totalBytesWritten /
-            downloadProgress.totalBytesExpectedToWrite;
-          setDownloadProgress((prev) => ({
-            ...prev,
-            [download.id]: Math.round(progress * 100),
-          }));
+          const total = downloadProgress.totalBytesExpectedToWrite;
+          const pct =
+            total > 0
+              ? Math.round((downloadProgress.totalBytesWritten / total) * 100)
+              : 0;
+          setDownloadProgress((prev) => ({ ...prev, [download.id]: pct }));
         },
       );
 
       const result = await downloadResumable.downloadAsync();
 
-      if (result?.uri) {
-        console.log("✅ File downloaded successfully:", result.uri);
-
-        // Clear progress
-        setDownloadProgress((prev) => {
-          const newProgress = { ...prev };
-          delete newProgress[download.id];
-          return newProgress;
-        });
-
-        // Check if sharing is available and share the file
-        const isSharingAvailable = await Sharing.isAvailableAsync();
-        if (isSharingAvailable) {
-          await Sharing.shareAsync(result.uri, {
-            mimeType: getMimeType(download.fileType),
-            dialogTitle: download.title,
-            UTI: `.${download.fileType || "pdf"}`,
-          });
-        } else {
-          Alert.alert(
-            "Download Complete",
-            `File saved to: ${result.uri}\n\nYou can access it from your device's file manager.`,
-          );
-        }
-      } else {
-        throw new Error("Download failed - no file URI returned");
+      if (!result?.uri) {
+        throw new Error("Download failed - no file returned");
       }
-    } catch (error: any) {
-      console.error("❌ Error downloading file:", error.message || error);
 
-      // Clear progress on error
-      setDownloadProgress((prev) => {
-        const newProgress = { ...prev };
-        delete newProgress[download.id];
-        return newProgress;
-      });
-
-      // Try fallback method if primary fails
-      if (useS3) {
-        console.log("⚠️ S3 download failed, trying direct download method...");
-        await handleDownload(download, false);
-      } else {
-        Alert.alert(
-          "Download Error",
-          "Unable to download the file. The download link may have expired or the file may not be available. Please try refreshing the page or contact support if the problem persists.",
+      // downloadAsync doesn't throw on HTTP errors - check status manually
+      if (result.status && result.status !== 200) {
+        await FileSystem.deleteAsync(result.uri, { idempotent: true });
+        throw new Error(
+          `Server returned ${result.status}. The file may not be available.`,
         );
       }
+
+      setDownloadProgress((prev) => {
+        const updated = { ...prev };
+        delete updated[download.id];
+        return updated;
+      });
+
+      console.log("✅ File downloaded:", result.uri);
+
+      const isSharingAvailable = await Sharing.isAvailableAsync();
+      if (isSharingAvailable) {
+        await Sharing.shareAsync(result.uri, {
+          mimeType: getMimeType(fileExtension),
+          dialogTitle: download.title,
+          UTI: `.${fileExtension}`,
+        });
+      } else {
+        Alert.alert("Download Complete", "File saved successfully.");
+      }
+    } catch (error: any) {
+      console.error("❌ Download failed:", error.message || error);
+
+      setDownloadProgress((prev) => {
+        const updated = { ...prev };
+        delete updated[download.id];
+        return updated;
+      });
+
+      Alert.alert(
+        "Download Failed",
+        error.message || "Unable to download the file. Please try again.",
+      );
     } finally {
       setDownloadingFiles((prev) => {
         const newSet = new Set(prev);

@@ -15,6 +15,7 @@ const TOKEN_KEY = "auth_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 const USER_KEY = "user_data";
 const TOKEN_EXPIRY_KEY = "token_expiry";
+const STUDENT_PROFILE_KEY = "student_profile";
 
 export interface LoginCredentials {
   identifier: string; // Can be email or username
@@ -42,6 +43,53 @@ export interface User {
 }
 
 export class AuthService {
+  // Callback triggered when a session genuinely expires (401 + refresh failed)
+  static sessionExpiredCallback: (() => void) | null = null;
+  // Flag to prevent firing the callback more than once per expired session
+  static _sessionExpiredTriggered = false;
+
+  // Decode the exp claim from a JWT without verifying the signature.
+  // Returns the expiry as a JS timestamp (ms), or null if decoding fails.
+  private static decodeTokenExpiry(token: string): number | null {
+    try {
+      const parts = token.split(".");
+      if (parts.length !== 3) return null;
+      // Base64url → base64, add padding
+      const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const padded = base64 + "===".slice((base64.length + 3) % 4);
+      const decoded = JSON.parse(atob(padded));
+      return typeof decoded.exp === "number" ? decoded.exp * 1000 : null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Signal that the session has expired – called by the API interceptor
+  static triggerSessionExpiry(): void {
+    if (this._sessionExpiredTriggered) return;
+    this._sessionExpiredTriggered = true;
+    console.log("🔒 AuthService: Session expired – notifying AuthContext");
+    if (this.sessionExpiredCallback) {
+      this.sessionExpiredCallback();
+    }
+  }
+
+  // Clear all stored tokens/user data without calling the logout API endpoint
+  static async clearSession(): Promise<void> {
+    try {
+      await AsyncStorage.multiRemove([
+        TOKEN_KEY,
+        REFRESH_TOKEN_KEY,
+        USER_KEY,
+        TOKEN_EXPIRY_KEY,
+        STUDENT_PROFILE_KEY,
+      ]);
+      console.log("✅ AuthService: Session cleared from storage");
+    } catch (error) {
+      console.log("⚠️ AuthService: Failed to clear session:", error);
+    }
+  }
+
   // Login
   static async login(credentials: LoginCredentials): Promise<LoginResponse> {
     try {
@@ -83,6 +131,9 @@ export class AuthService {
 
       const { accessToken, user, refreshToken, expiresIn } = response.data;
 
+      // Reset session-expiry flag so the newly-issued session works cleanly
+      AuthService._sessionExpiredTriggered = false;
+
       // Store token and user data (using accessToken as main token)
       // Store both individually with error handling
       try {
@@ -103,8 +154,11 @@ export class AuthService {
         }
       }
 
-      // Calculate and store token expiry time (default 7 days if not provided)
-      const expiryTime = Date.now() + (expiresIn || 7 * 24 * 60 * 60) * 1000;
+      // Decode the real expiry directly from the JWT so we always store the
+      // correct value regardless of whether the server sends expiresIn.
+      const expiryTime =
+        AuthService.decodeTokenExpiry(accessToken) ??
+        Date.now() + 5 * 60 * 60 * 1000; // fallback: 5 h
       try {
         await AsyncStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
         console.log(
@@ -203,6 +257,7 @@ export class AuthService {
         REFRESH_TOKEN_KEY,
         USER_KEY,
         TOKEN_EXPIRY_KEY,
+        STUDENT_PROFILE_KEY,
       ]);
     }
   }
@@ -223,67 +278,75 @@ export class AuthService {
     return userData ? JSON.parse(userData) : null;
   }
 
+  // Cache student profile locally for instant display on next open
+  static async cacheStudentProfile(profile: any): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STUDENT_PROFILE_KEY, JSON.stringify(profile));
+    } catch (error) {
+      console.log("⚠️ Failed to cache student profile:", error);
+    }
+  }
+
+  // Get cached student profile
+  static async getCachedStudentProfile(): Promise<any | null> {
+    try {
+      const data = await AsyncStorage.getItem(STUDENT_PROFILE_KEY);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
   // Refresh token
   static async refreshToken(): Promise<string | null> {
     try {
       console.log("🔄 AuthService: Attempting to refresh token...");
 
       const currentToken = await AsyncStorage.getItem(TOKEN_KEY);
-      const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+      if (!currentToken) {
+        console.log("⚠️ AuthService: No token available to refresh");
+        return null;
+      }
 
-      // If we have a refresh token, use it
-      if (refreshToken) {
-        try {
-          const response = await authApi.post("/auth/refresh", {
-            refreshToken,
-          });
-          const {
-            accessToken,
-            refreshToken: newRefreshToken,
-            expiresIn,
-          } = response.data;
-          await AsyncStorage.setItem(TOKEN_KEY, accessToken);
-          if (newRefreshToken) {
-            await AsyncStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
-          }
-          const expiryTime = Date.now() + (expiresIn || 7 * 24 * 60 * 60) * 1000;
+      try {
+        // Always send the current token as a Bearer header.
+        // The backend's /auth/refresh endpoint accepts expired tokens
+        // (ignoreExpiration: true) so this works even after expiry.
+        const response = await authApi.post(
+          "/auth/refresh",
+          {},
+          {
+            headers: { Authorization: `Bearer ${currentToken}` },
+          },
+        );
+
+        const newToken = response.data?.accessToken;
+        if (newToken) {
+          await AsyncStorage.setItem(TOKEN_KEY, newToken);
+          // Decode real expiry from the JWT; fallback to 5 hours
+          const expiryTime =
+            AuthService.decodeTokenExpiry(newToken) ??
+            Date.now() + 5 * 60 * 60 * 1000;
           await AsyncStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
-          return accessToken;
-        } catch (refreshError) {
-          console.log("⚠️ Token refresh failed, keeping current token:", refreshError);
-          // Do NOT logout or clear user, just keep current token
-          return currentToken;
+          console.log("✅ AuthService: Token refreshed successfully");
+          return newToken;
         }
-      }
 
-      // If no refresh token but we have a current token, try to extend it
-      if (currentToken) {
-        try {
-          const response = await authApi.post(
-            "/auth/refresh",
-            {},
-            {
-              headers: { Authorization: `Bearer ${currentToken}` },
-            },
-          );
-          if (response.data?.accessToken) {
-            const { accessToken, expiresIn } = response.data;
-            await AsyncStorage.setItem(TOKEN_KEY, accessToken);
-            const expiryTime = Date.now() + (expiresIn || 7 * 24 * 60 * 60) * 1000;
-            await AsyncStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
-            return accessToken;
-          }
-        } catch (extendError) {
-          console.log("⚠️ Token extension failed, keeping current token:", extendError);
-        }
+        console.log("⚠️ AuthService: Refresh response had no accessToken");
+        return null;
+      } catch (refreshError: any) {
+        console.log(
+          "⚠️ AuthService: Token refresh call failed:",
+          refreshError?.response?.status,
+          refreshError?.message,
+        );
+        // Return null to signal that refresh failed — do NOT return the expired
+        // token, because the interceptor uses non-null to mean "retry with this".
+        return null;
       }
-
-      // Always keep user logged in, even if refresh fails
-      return currentToken;
     } catch (error) {
-      console.log("⚠️ Token refresh error (keeping user logged in):", error);
-      const currentToken = await AsyncStorage.getItem(TOKEN_KEY);
-      return currentToken;
+      console.log("⚠️ AuthService: Token refresh error:", error);
+      return null;
     }
   }
 
@@ -373,19 +436,36 @@ export class AuthService {
       const token = await this.getToken();
       if (!token) return false;
 
-      // Check if token will expire soon (within 1 hour)
       const expiryStr = await AsyncStorage.getItem(TOKEN_EXPIRY_KEY);
+
       if (expiryStr) {
         const expiryTime = parseInt(expiryStr);
         const timeUntilExpiry = expiryTime - Date.now();
         const oneHour = 60 * 60 * 1000;
 
-        // If token expires in less than 1 hour, refresh it proactively
-        if (timeUntilExpiry < oneHour && timeUntilExpiry > 0) {
+        if (timeUntilExpiry <= 0) {
+          // Token already expired — refresh immediately
+          console.log("⏰ Token expired, refreshing now...");
+          await this.refreshToken();
+        } else if (timeUntilExpiry < oneHour) {
+          // Token expires within 1 hour — refresh proactively
           console.log("⏰ Token expires soon, refreshing proactively...");
           await this.refreshToken();
-        } else if (timeUntilExpiry <= 0) {
-          console.log("⏰ Token expired, refreshing...");
+        }
+      } else {
+        // No expiry record stored (e.g. old install / first launch after update).
+        // Try to decode from the token itself; if that fails, refresh anyway to
+        // ensure we have a fresh token and a correct expiry on record.
+        const decoded = AuthService.decodeTokenExpiry(token);
+        if (decoded) {
+          await AsyncStorage.setItem(TOKEN_EXPIRY_KEY, decoded.toString());
+          const timeUntilExpiry = decoded - Date.now();
+          if (timeUntilExpiry <= 60 * 60 * 1000) {
+            console.log("⏰ (recovered expiry) Token due soon, refreshing...");
+            await this.refreshToken();
+          }
+        } else {
+          console.log("⏰ No expiry record — refreshing proactively");
           await this.refreshToken();
         }
       }
@@ -396,7 +476,6 @@ export class AuthService {
         "🔄 AuthService: Token check error (keeping user logged in):",
         error,
       );
-      // Don't return false - keep user logged in even if check fails
       return true;
     }
   }

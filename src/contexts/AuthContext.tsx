@@ -3,8 +3,10 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useRef,
   ReactNode,
 } from "react";
+import { Alert, AppState, AppStateStatus } from "react-native";
 import AuthService, { User, LoginCredentials } from "../services/auth";
 import StudentAPI from "../services/api";
 
@@ -37,10 +39,73 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [studentProfile, setStudentProfile] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const userRef = useRef<User | null>(null);
+
+  // Keep userRef in sync so the AppState callback always sees the latest user
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   // Check authentication status on app start
   useEffect(() => {
     checkAuthStatus();
+  }, []);
+
+  // Register the session-expiry callback so the API interceptor can signal us
+  // when a token refresh genuinely fails (e.g. account suspended, server down).
+  // We clear state and show a friendly "please log in again" prompt.
+  useEffect(() => {
+    AuthService.sessionExpiredCallback = () => {
+      console.log("🔒 AuthContext: Handling session expiry");
+      setUser(null);
+      setStudentProfile(null);
+      Alert.alert(
+        "Session Expired",
+        "Your session has expired. Please log in again.",
+        [{ text: "OK" }],
+      );
+    };
+    return () => {
+      AuthService.sessionExpiredCallback = null;
+    };
+  }, []);
+
+  // Re-fetch profile whenever the app returns to the foreground
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      "change",
+      async (nextState: AppStateStatus) => {
+        if (
+          appStateRef.current.match(/inactive|background/) &&
+          nextState === "active"
+        ) {
+          console.log("📱 App foregrounded - refreshing token and profile");
+          const currentUser = userRef.current;
+          if (currentUser?.id) {
+            await AuthService.ensureTokenFresh();
+            try {
+              const profileResponse = await StudentAPI.getStudentProfile(
+                currentUser.id,
+              );
+              const profileData = (profileResponse as any)?.success
+                ? (profileResponse as any).data
+                : profileResponse;
+              setStudentProfile(profileData);
+              await AuthService.cacheStudentProfile(profileData);
+              console.log("✅ AuthContext: Profile refreshed on foreground");
+            } catch (e) {
+              console.log(
+                "⚠️ AuthContext: Profile refresh on foreground failed:",
+                e,
+              );
+            }
+          }
+        }
+        appStateRef.current = nextState;
+      },
+    );
+    return () => subscription.remove();
   }, []);
 
   // Periodic token refresh - check every 30 minutes
@@ -82,7 +147,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         );
         setUser(userData);
 
-        // Try to load student profile, but do NOT clear user if it fails
+        // Immediately show cached profile so the UI has data while we fetch fresh
+        const cachedProfile = await AuthService.getCachedStudentProfile();
+        if (cachedProfile) {
+          setStudentProfile(cachedProfile);
+          console.log("✅ AuthContext: Loaded cached student profile");
+        }
+
+        // Ensure token is fresh BEFORE making any API calls
+        await AuthService.ensureTokenFresh();
+
+        // Fetch fresh profile from the server
         try {
           const profileResponse = await StudentAPI.getStudentProfile(
             userData.id,
@@ -91,13 +166,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             ? (profileResponse as any).data
             : profileResponse;
           setStudentProfile(profileData);
-          console.log("✅ AuthContext: Student profile loaded:", profileData);
+          await AuthService.cacheStudentProfile(profileData);
+          console.log(
+            "✅ AuthContext: Student profile loaded and cached:",
+            profileData,
+          );
         } catch (profileError) {
           console.log(
-            "⚠️ AuthContext: Failed to load student profile:",
+            "⚠️ AuthContext: Failed to load fresh student profile (using cached):",
             profileError,
           );
-          // Keep user logged in, just show fallback data
+          // cachedProfile (if any) is already set above — user still sees data
         }
       } else {
         // No stored credentials, only then clear user
@@ -105,7 +184,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setStudentProfile(null);
       }
     } catch (error) {
-      console.log("❌ AuthContext: Auto-login error (keeping user logged in):", error);
+      console.log(
+        "❌ AuthContext: Auto-login error (keeping user logged in):",
+        error,
+      );
       // Do NOT clear user or studentProfile on error
     } finally {
       console.log("🔐 AuthContext: Auto-login check completed");
@@ -131,8 +213,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           ? (profileResponse as any).data
           : profileResponse;
         setStudentProfile(profileData);
+        await AuthService.cacheStudentProfile(profileData);
         console.log(
-          "✅ AuthContext: Student profile loaded on login:",
+          "✅ AuthContext: Student profile loaded and cached on login:",
           profileData,
         );
       } catch (profileError) {
@@ -182,7 +265,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         ? (profileResponse as any).data
         : profileResponse;
       setStudentProfile(profileData);
-      console.log("✅ AuthContext: Student profile refreshed:", profileData);
+      await AuthService.cacheStudentProfile(profileData);
+      console.log(
+        "✅ AuthContext: Student profile refreshed and cached:",
+        profileData,
+      );
     } catch (error) {
       console.error(
         "⚠️ AuthContext: Failed to refresh student profile:",

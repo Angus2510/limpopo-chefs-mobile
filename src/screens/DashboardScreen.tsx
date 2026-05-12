@@ -46,6 +46,10 @@ export default function DashboardScreen() {
   );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [feeBalance, setFeeBalance] = useState<{
+    outstandingAmount: number;
+    formattedOutstandingAmount: string;
+  } | null>(null);
 
   const loadDashboardData = async () => {
     if (!isAuthenticated || !user?.id) {
@@ -58,7 +62,45 @@ export default function DashboardScreen() {
       console.log("🔍 Dashboard: Loading data for user:", user.id);
 
       // Load actual student profile
-      let profile = null;
+      // First seed from the AuthContext cached profile so we always have a fallback
+      let profile: any = null;
+      if (studentProfile) {
+        const sp = studentProfile;
+        const cachedStudent = sp?.data?.student || sp?.student || sp;
+        const firstName =
+          cachedStudent?.profile?.firstName ||
+          cachedStudent?.firstName ||
+          user?.firstName ||
+          "";
+        const lastName =
+          cachedStudent?.profile?.lastName ||
+          cachedStudent?.lastName ||
+          user?.lastName ||
+          "";
+        profile = {
+          id: cachedStudent?.id || user.id,
+          name:
+            `${firstName} ${lastName}`.trim() || user?.firstName || "Student",
+          email: cachedStudent?.email || user?.email || "",
+          studentNumber:
+            cachedStudent?.admissionNumber ||
+            cachedStudent?.username ||
+            user?.studentNumber ||
+            "",
+          course: getQualificationName(
+            cachedStudent?.intakeGroupTitle ||
+              cachedStudent?.qualificationTitle,
+          ),
+          year: 1,
+          profileImage: cachedStudent?.avatarUrl || undefined,
+          campus: cachedStudent?.campusTitle || "",
+          intakeGroup: cachedStudent?.intakeGroupTitle || "",
+          intakeGroupId:
+            cachedStudent?.intakeGroup || cachedStudent?.intakeGroupId || [],
+        };
+        console.log("✅ Dashboard: Seeded profile from AuthContext cache");
+      }
+
       try {
         const apiResponse = await StudentAPI.getStudentProfile(user.id);
         console.log(
@@ -88,18 +130,24 @@ export default function DashboardScreen() {
           };
         }
       } catch (error) {
-        console.log("⚠️ Dashboard: Profile API failed, using basic user data");
-        profile = {
-          id: user.id,
-          name:
-            `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-            "Student",
-          email: user.email || "",
-          studentNumber: user.id,
-          course: "Culinary Arts",
-          year: 1,
-          profileImage: undefined,
-        };
+        console.log(
+          "⚠️ Dashboard: Profile API failed, using cached/stored data",
+        );
+        // If we already seeded profile from cache above, keep it.
+        // Only fall back to bare user object if we have nothing at all.
+        if (!profile) {
+          profile = {
+            id: user.id,
+            name:
+              `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+              "Student",
+            email: user.email || "",
+            studentNumber: user.studentNumber || user.id,
+            course: "Culinary Arts",
+            year: 1,
+            profileImage: undefined,
+          };
+        }
       }
 
       // Student profile now comes from centralized AuthContext
@@ -345,6 +393,24 @@ export default function DashboardScreen() {
         ];
       }
 
+      // Load fee balance
+      try {
+        const balanceResponse = await StudentAPI.getFeeBalance(user.id);
+        const processedBalance = (balanceResponse as any)?.success
+          ? (balanceResponse as any)?.data
+          : balanceResponse;
+        if (processedBalance) {
+          setFeeBalance({
+            outstandingAmount: processedBalance.outstandingAmount ?? 0,
+            formattedOutstandingAmount:
+              processedBalance.formattedOutstandingAmount ||
+              `R ${(processedBalance.outstandingAmount ?? 0).toFixed(2)}`,
+          });
+        }
+      } catch (error) {
+        console.log("⚠️ Dashboard: Failed to load fee balance", error);
+      }
+
       // Create dashboard data with real profile and events
       const dashboardData: DashboardData = {
         student: profile as Student,
@@ -372,22 +438,7 @@ export default function DashboardScreen() {
             status: "unpaid",
           },
         ],
-        announcements: await (async () => {
-          try {
-            const announcements = await StudentAPI.getAnnouncements(user.id);
-            return announcements.sort((a, b) => {
-              // Sort by priority first, then by date
-              const priorityOrder = { high: 3, medium: 2, low: 1 };
-              const priorityDiff =
-                priorityOrder[b.priority] - priorityOrder[a.priority];
-              if (priorityDiff !== 0) return priorityDiff;
-              return new Date(b.date).getTime() - new Date(a.date).getTime();
-            });
-          } catch (error) {
-            console.log("⚠️ Dashboard: Failed to load announcements", error);
-            return [];
-          }
-        })(),
+        announcements: [],
       };
       setDashboardData(dashboardData);
     } catch (error) {
@@ -400,6 +451,7 @@ export default function DashboardScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
+    setFeeBalance(null);
     await Promise.all([refreshStudentProfile(), loadDashboardData()]);
     setRefreshing(false);
   };
@@ -468,30 +520,90 @@ export default function DashboardScreen() {
         </Card.Content>
       </Card>
 
+      {/* Student Card Button */}
+      <TouchableOpacity
+        style={styles.studentCardButton}
+        onPress={() =>
+          navigation.navigate("More" as any, { screen: "StudentCard" })
+        }
+        activeOpacity={0.85}
+      >
+        <View style={styles.studentCardButtonStripe} />
+        <View style={styles.studentCardButtonContent}>
+          <Ionicons name="card" size={26} color="#6B2F8A" />
+          <View style={styles.studentCardButtonText}>
+            <Text style={styles.studentCardButtonTitle}>My Student Card</Text>
+            <Text style={styles.studentCardButtonSub}>
+              View your digital ID card
+            </Text>
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color="#aaa" />
+      </TouchableOpacity>
+
       {/* Quick Stats */}
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Ionicons name="calendar" size={24} color="#014b01" />
-          <Text style={styles.statNumber}>
-            {dashboardData.upcomingEvents.length}
-          </Text>
-          <Text style={styles.statLabel}>Daily Roster</Text>
-        </View>
         <TouchableOpacity
           style={styles.statCard}
-          onPress={() => navigation.navigate("More" as any, { screen: "Fees" })}
+          onPress={() => navigation.navigate("Attendance" as any)}
           activeOpacity={0.7}
         >
-          <Ionicons name="cash" size={24} color="#ff6b6b" />
-          <Text style={styles.statNumber}>
-            {dashboardData.pendingFees.length}
-          </Text>
-          <Text style={styles.statLabel}>Pending Fees</Text>
+          <Ionicons name="calendar" size={36} color="#014b01" />
+          <Text style={styles.statLabel}>Attendance</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.statCard}
+          onPress={() => navigation.navigate("More" as any, { screen: "SOR" })}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="ribbon" size={36} color="#014b01" />
+          <Text style={styles.statLabel}>Results</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Outstanding Fees Block */}
+      <TouchableOpacity
+        onPress={() => navigation.navigate("More" as any, { screen: "Fees" })}
+        activeOpacity={0.8}
+      >
+        <Card style={styles.feesCard}>
+          <Card.Content style={styles.feesCardContent}>
+            <View style={styles.feesIconContainer}>
+              <Ionicons name="wallet-outline" size={32} color="#fff" />
+            </View>
+            <View style={styles.feesTextContainer}>
+              <Text style={styles.feesLabel}>Amount to Pay:</Text>
+              {feeBalance ? (
+                <Text
+                  style={[
+                    styles.feesAmount,
+                    feeBalance.outstandingAmount > 0
+                      ? styles.feesAmountOwed
+                      : styles.feesAmountClear,
+                  ]}
+                >
+                  {feeBalance.formattedOutstandingAmount}
+                </Text>
+              ) : (
+                <ActivityIndicator
+                  size="small"
+                  color="#fff"
+                  style={{ marginTop: 4 }}
+                />
+              )}
+              <Text style={styles.feesSubLabel}>Tap to view fee details</Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color="rgba(255,255,255,0.7)"
+            />
+          </Card.Content>
+        </Card>
+      </TouchableOpacity>
+
       {/* Daily Roster */}
-      <Card style={styles.card}>
+      <Card style={[styles.card, styles.lastCard]}>
         <Card.Content>
           <Title>Daily Roster</Title>
           {dashboardData.upcomingEvents.length > 0 ? (
@@ -522,88 +634,6 @@ export default function DashboardScreen() {
           >
             View Weekly Roster
           </Button>
-        </Card.Content>
-      </Card>
-
-      {/* Recent Attendance */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title>Recent Attendance</Title>
-          {dashboardData.recentAttendance.length > 0 ? (
-            dashboardData.recentAttendance.slice(0, 3).map((record) => (
-              <View key={record.id} style={styles.attendanceItem}>
-                <View style={styles.attendanceContent}>
-                  <Text style={styles.attendanceDate}>
-                    {new Date(record.date).toLocaleDateString()}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.attendanceStatus,
-                      { color: getStatusColor(record.status) },
-                    ]}
-                  >
-                    {record.status.toUpperCase()}
-                  </Text>
-                </View>
-              </View>
-            ))
-          ) : (
-            <Paragraph>No attendance records</Paragraph>
-          )}
-        </Card.Content>
-      </Card>
-
-      {/* Announcements */}
-      <Card style={[styles.card, styles.lastCard]}>
-        <Card.Content>
-          <Title>Notifications</Title>
-          {dashboardData.announcements.length > 0 ? (
-            dashboardData.announcements.slice(0, 2).map((announcement) => (
-              <View
-                key={announcement.id}
-                style={[
-                  styles.announcementItem,
-                  {
-                    borderLeftColor: getPriorityColor(announcement.priority),
-                    borderLeftWidth: 4,
-                  },
-                ]}
-              >
-                <View style={styles.announcementHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.announcementTitle}>
-                      {announcement.title}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.priorityIndicator,
-                        { color: getPriorityColor(announcement.priority) },
-                      ]}
-                    >
-                      {announcement.priority.toUpperCase()}
-                    </Text>
-                  </View>
-                  <Text style={styles.announcementDate}>
-                    {new Date(announcement.date).toLocaleDateString()}
-                  </Text>
-                </View>
-                <Text style={styles.announcementContent} numberOfLines={2}>
-                  {announcement.content}
-                </Text>
-              </View>
-            ))
-          ) : (
-            <Paragraph>No new notifications</Paragraph>
-          )}
-          {dashboardData.announcements.length > 0 && (
-            <Button
-              mode="text"
-              onPress={() => navigation.navigate("Announcements")}
-              style={{ marginTop: 8 }}
-            >
-              View All Announcements
-            </Button>
-          )}
         </Card.Content>
       </Card>
 
@@ -780,6 +810,91 @@ const styles = StyleSheet.create({
     color: "#014b01",
     marginTop: 8,
     textAlign: "center",
+  },
+  feesCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: "#014b01",
+    elevation: 4,
+  },
+  feesCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  feesIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+  },
+  feesTextContainer: {
+    flex: 1,
+  },
+  feesLabel: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.8)",
+    fontWeight: "500",
+  },
+  feesAmount: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginTop: 2,
+  },
+  feesAmountOwed: {
+    color: "#ffcdd2",
+  },
+  feesAmountClear: {
+    color: "#c8e6c9",
+  },
+  feesSubLabel: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.6)",
+    marginTop: 3,
+  }, // Student Card button
+  studentCardButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: "hidden",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    paddingRight: 14,
+  },
+  studentCardButtonStripe: {
+    width: 6,
+    alignSelf: "stretch",
+    backgroundColor: "#6B2F8A",
+  },
+  studentCardButtonContent: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    gap: 12,
+  },
+  studentCardButtonText: {
+    flex: 1,
+  },
+  studentCardButtonTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1a1a1a",
+  },
+  studentCardButtonSub: {
+    fontSize: 12,
+    color: "#777",
+    marginTop: 2,
   },
   viewAllButton: {
     marginTop: 8,

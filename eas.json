@@ -32,6 +32,18 @@
         "GOOGLE_SERVICES_JSON": "@GOOGLE_SERVICES_JSON"
       }
     },
+    "testflight": {
+      "channel": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "ios": {
+        "distribution": "store"
+      },
+      "env": {
+        "GOOGLE_SERVICES_JSON": "@GOOGLE_SERVICES_JSON"
+      }
+    },
     "production": {
       "android": {
         "buildType": "app-bundle"
@@ -43,9 +55,30 @@
       "env": {
         "GOOGLE_SERVICES_JSON": "@GOOGLE_SERVICES_JSON"
       }
+    },
+    "huawei": {
+      "channel": "production",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "env": {
+        "GOOGLE_SERVICES_JSON": "@GOOGLE_SERVICES_JSON"
+      }
     }
   },
   "submit": {
+    "testflight": {
+      "ios": {
+        "appleId": "anguscarey390@gmail.com",
+        "ascAppId": "6754912528",
+        "appleTeamId": "YU3WA8Z4R7"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "internal"
+      }
+    },
     "production": {
       "ios": {
         "appleId": "anguscarey390@gmail.com",

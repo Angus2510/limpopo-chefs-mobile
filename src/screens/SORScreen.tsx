@@ -1179,10 +1179,10 @@ export default function SORScreen(): React.JSX.Element {
               results.map((result: SORResult, index: number) => (
                 <DataTable.Row key={index}>
                   <DataTable.Cell>
-                    {result.subject || result.unitTitle || "N/A"}
+                    <Text>{result.subject || result.unitTitle || "N/A"}</Text>
                   </DataTable.Cell>
                   <DataTable.Cell numeric>
-                    {result.result || "N/A"}
+                    <Text>{result.result || "N/A"}</Text>
                   </DataTable.Cell>
                   <DataTable.Cell numeric>
                     <Text
@@ -1201,15 +1201,25 @@ export default function SORScreen(): React.JSX.Element {
               ))
             ) : (
               <DataTable.Row>
-                <DataTable.Cell>No results available</DataTable.Cell>
-                <DataTable.Cell numeric>-</DataTable.Cell>
-                <DataTable.Cell numeric>-</DataTable.Cell>
+                <DataTable.Cell>
+                  <Text>No results available</Text>
+                </DataTable.Cell>
+                <DataTable.Cell numeric>
+                  <Text>-</Text>
+                </DataTable.Cell>
+                <DataTable.Cell numeric>
+                  <Text>-</Text>
+                </DataTable.Cell>
               </DataTable.Row>
             )}
 
             <DataTable.Row>
-              <DataTable.Cell>Overall Outcome</DataTable.Cell>
-              <DataTable.Cell numeric>-</DataTable.Cell>
+              <DataTable.Cell>
+                <Text>Overall Outcome</Text>
+              </DataTable.Cell>
+              <DataTable.Cell numeric>
+                <Text>-</Text>
+              </DataTable.Cell>
               <DataTable.Cell numeric>
                 <Text
                   style={
